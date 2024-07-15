@@ -19,7 +19,7 @@ Here are some of the performance optimizations specifically done on Blitzping:
 * **Pre-Generation:** All the static parts of the packet buffer get generated once, outside of the `sendto()` tightloop;
 * **Asynchronous:** Configuring raw sockets to be non-blocking by default;
 * **Multithreading:** Polling the same socket in `sendto()` from multiple threads; and
-* **Compiler Flags:** Compiling with `-Ofast`, `-flto`, and `-march=native` (these actually had little effect; by this point, the entire bottleneck lied on the Kernel's own `sendto()` routine).
+* **Compiler Flags:** Compiling with `-Ofast`, `-flto`, and `-march=native` (these actually had little effect; by this point, the entire bottleneck lays on the Kernel's own `sendto()` routine).
 
 Usage: 
 `blitzping <source IP/CIDR> <source port (ignored)> <destination IP> <destination port>` \
