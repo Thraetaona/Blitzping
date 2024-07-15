@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------------
 
 # Target name
-TARGET = decimator
+TARGET = blitzping
 
 # Directories
 SRCDIR = ./src
