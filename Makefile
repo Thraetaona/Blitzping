@@ -26,6 +26,7 @@ STRIP = llvm-strip
 # LLVM's target triplets are far more straightforward.
 #
 # For that, llvm, llvm-binutils, clang, and lld will be required.
+#-D_POSIX_C_SOURCE=200809L
 CCOPT = \
 	-std=c11 -D_DEFAULT_SOURCE \
 	-Wall -Wextra -Werror -pedantic-errors \
