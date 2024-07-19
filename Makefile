@@ -27,7 +27,7 @@ STRIP = llvm-strip
 #
 # For that, llvm, llvm-binutils, clang, and lld will be required.
 CCOPT = \
-	-std=c11 -D_DEFAULT_SOURCE \
+	-std=c11 -D _POSIX_C_SOURCE=200809L -D NDEBUG \
 	-Wall -Wextra -Werror -pedantic-errors \
 	-MMD -MP \
 	-Ofast -flto -march=armv8-a \
