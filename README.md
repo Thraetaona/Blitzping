@@ -72,6 +72,11 @@ For example, in case of ARMv8 (aarch64), you will need the following Debian pack
 
 While aarch64's packages are widely supported on desktop-based Linux distros, Debian (for example) does not provide packages for older embedded targets like 32-bit MIPSeb.  In those cases, if you are not able to manually acquire and compile LLVM's `compile-rt:mips` and `libunwind:mips` to that architecture, you can `apt install libgcc1-mips-cross` and replace `--rtlib=compiler-rt --unwindlib=libunwind` in the makefile with `--rtlib=libgcc --unwindlib=libgcc -static`; this statically links it against the final executable.  You could also `apt install gcc-mips-linux-gnu` and skip LLVM altogether.
 
+# FAQs
+
+### Why rewrite hping3 and not just fork it?
+### Why not rewrite it in Rust (or C++)?
+
 The makefile is configured with `-Wall -Wextra -Werror -pedantic-errors` by default; it should compile with no warnings.
 
 NOTE: If your router uses LibreCMC, be aware that the system's libc might be too old to run C programs like this; to fix that, you could either take the risk and unflag that specific package via `opkg` in order to upgrade it, or you could flash the more modern OpenWRT onto your router.
