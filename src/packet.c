@@ -27,36 +27,22 @@ int send_packets(void *arg) {
 
 
     // Craft the static parts of our packet
+    *ip_header = (struct ip_hdr){
+        .ver = 4,
+        .ihl = 5,
+        .ttl = 128,
+        .proto = IP_PROTO_TCP,
+        .len = htons(sizeof (struct ip_hdr) + sizeof (struct tcp_hdr)),
+        .saddr.address = htonl(packet_info->src_ip_start.address + (rand() % (packet_info->src_ip_end.address - packet_info->src_ip_start.address + 1))),
+        .daddr.address = packet_info->dest_ip.address
+    };
 
-    // TODO: Refactor and clean this code up now that I have "netinet.h"
-    // generate the struct with the {} initialization notation
-
-    // IP Version
-    ip_header->ver      = 4; // IPv4
-    // Header length (in 32-bit words)
-    ip_header->ihl      = 5; // Minimum size (5*4 = 20 bytes)
-    // Time to live
-    ip_header->ttl      = 128;
-    // Source IP
-    ip_header->saddr.address   = htonl(packet_info->src_ip_start.address
-        + (rand() % (packet_info->src_ip_end.address
-        - packet_info->src_ip_start.address + 1)));
-    // Destination IP
-    ip_header->daddr.address  = packet_info->dest_ip.address;
-    // IP Protocol
-    ip_header->proto    = IP_PROTO_TCP;
-    // Total length
-    ip_header->len  = htons(sizeof (struct ip_hdr)
-                                + sizeof (struct tcp_hdr));
-
-    // Source port
-    tcp_header->sport = htons(rand() % 65536);
-    // Destination port
-    tcp_header->dport = htons(packet_info->dest_port);
-    // Sequence number
-    tcp_header->seqnum   = rand();
-    // TCP Flag(s)
-    tcp_header->flags.syn = true;
+    *tcp_header = (struct tcp_hdr){
+        .sport = htons(rand() % 65536),
+        .dport = htons(packet_info->dest_port),
+        .seqnum = rand(),
+        .flags.syn = true
+    };
 
     // TODO: See if this is required for a raw sendto()?
     struct sockaddr_in dest_info;

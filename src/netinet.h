@@ -146,7 +146,7 @@ typedef enum __attribute__((packed)) ip_ecn_code {
     // RFC 3168
     IP_ECN_NOT_ECT = 0, // 0b00: Not ECN-Capable Transport
     // RFC 8311 / RFC Errata 5399 / RFC 9331
-    IP_ECN_ECT_1   = 1, // 0b01: ECN-Capable Transport 1 (experimental use)
+    IP_ECN_ECT_1   = 1, // 0b01: ECN-Capable Transport 1 (experimental)
     // RFC 3168
     IP_ECN_ECT_0   = 2, // 0b10: ECN-Capable Transport 0
     IP_ECN_CE      = 3, // 0b11: Congestion Experienced (CE)
@@ -222,7 +222,7 @@ union ip_tos_view {
 
 // IP flag definitions
 _Pragma ("pack(push)")
-typedef enum __attribute__((packed)) ip_flags {
+typedef enum __attribute__((packed)) ip_flag {
     IP_FLAG_EV = 1 << 2, // 0b100: Reserved bit (RFC 3514 "evil bit")
     IP_FLAG_DF = 1 << 1, // 0b010: Don't Fragment
     IP_FLAG_MF = 1 << 0, // 0b001: More Fragments
@@ -255,6 +255,22 @@ union ip_flag_view {
     };
 };
 
+
+//    0                   1                   2                   3
+//    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |Version|  IHL  |    DSCP   |ECN|          Total Length         |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |         Identification        |Flags|      Fragment Offset    |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |  Time to Live |    Protocol   |         Header Checksum       |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |                       Source Address                          |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |                    Destination Address                        |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |                    Options                    |    Padding    |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 typedef struct ip_hdr {
 #if defined(__LITTLE_ENDIAN__)
     uint8_t                 ihl       : 4;  // Internet Header Length
@@ -309,11 +325,11 @@ struct {
 };
 #endif
     uint8_t                 ttl;            // Time to live
-    ip_proto_t              proto   : 8;    // Protocol
+    ip_proto_t              proto     : 8;  // Protocol
     uint16_t                chksum;         // Header Checksum
     ip_addr_t               saddr;          // Source Address
     ip_addr_t               daddr;          // Destination Address
-    //uint32_t              options[];      // IP Options (0-320 bits)
+    uint32_t                options[];      // IP Options (0-320 bits)
 } ip_hdr_t;
 // TODO: Make a struct for IP options
 static_assert(sizeof (ip_hdr_t) == 20,
@@ -332,7 +348,7 @@ static_assert(sizeof (ip_hdr_t) == 20,
 
 // TCP flag definitions
 _Pragma ("pack(push)")
-typedef enum __attribute__((packed)) tcp_flags {
+typedef enum __attribute__((packed)) tcp_flag {
     TCP_FLAG_FIN = 1 << 0, // 0b00000001: Finish
     TCP_FLAG_SYN = 1 << 1, // 0b00000010: Synchronize
     TCP_FLAG_RST = 1 << 2, // 0b00000100: Reset
@@ -343,8 +359,6 @@ typedef enum __attribute__((packed)) tcp_flags {
     TCP_FLAG_CWR = 1 << 7, // 0b10000000: Congestion Window Reduced
 } tcp_flag_t;
 _Pragma ("pack(pop)")
-//static_assert(sizeof (tcp_flag_t) == sizeof (uint8_t),
-//            "TCP Flag field should not be different from a uint8_t!");
 
 union tcp_flag_view {
     // View no. 1 (as an entire byte)
@@ -373,6 +387,95 @@ union tcp_flag_view {
     };
 };
 
+// TCP options definitions
+// iana.org/assignments/tcp-parameters/tcp-parameters.xhtml
+// NOTE: [*] indicates that the option is considered "obsolete."
+_Pragma ("pack(push)")
+typedef enum __attribute__((packed)) tcp_option_kind {
+    // RFC 9293
+    TCP_OPT_KIND_EOL            = 0,   // End of Option List
+    TCP_OPT_KIND_NOP            = 1,   // No-Operation
+    TCP_OPT_KIND_MSS            = 2,   // Maximum Segment Size
+    // RFC 7323
+    TCP_OPT_KIND_WS             = 3,   // Window Scale
+    // RFC 2018
+    TCP_OPT_KIND_SACK_PERM      = 4,   // SACK Permitted
+    TCP_OPT_KIND_SACK           = 5,   // SACK Block
+    // RFC 1072 & RFC 6247
+    TCP_OPT_KIND_ECHO           = 6,   // [*] Echo (8)
+    TCP_OPT_KIND_ECHO_REPLY     = 7,   // [*] Echo-Reply (8)
+    // RFC 7323
+    TCP_OPT_KIND_TIMESTAMP      = 8,   // Timestamps
+    // RFC 1693 & RFC 6247
+    TCP_OPT_KIND_PARTIAL_PERM   = 9,   // [*] Part Order Connect Perm.
+    TCP_OPT_KIND_PARTIAL_PROF   = 10,  // [*] Part Order Serve Profile
+    TCP_OPT_KIND_CC             = 11,  // [*] Connection Count
+    TCP_OPT_KIND_CC_NEW         = 12,  // [*] Connection Count New
+    TCP_OPT_KIND_CC_ECHO        = 13,  // [*] Connection Count Echo
+    TCP_OPT_KIND_ALT_CHK_REQ    = 14,  // [*] Alternative Chksum Req.
+    TCP_OPT_KIND_ALT_CHK_DAT    = 15,  // [*] Alternative Chksum Data
+    // "Stev Knowles"
+    TCP_OPT_KIND_SKEETER        = 16,  // Skeeter (???)
+    TCP_OPT_KIND_BUBBA          = 17,  // Bubba (???)
+    // "Subbu Subramaniam" & "Monroe Bridges"
+    TCP_OPT_KIND_TRAILER_CHK    = 18,  // Trailer Checksum Option
+    // RFC 2385
+    TCP_OPT_KIND_MD5_SIG        = 19,  // [*] MD5 Signature (29)
+    // "Keith Scott"
+    TCP_OPT_KIND_SCPS_CAPABLE   = 20,  // SCPS Capabilities
+    TCP_OPT_KIND_SEL_NEG_ACK    = 21,  // Selective Negative Ack.
+    TCP_OPT_KIND_RECORD_BOUNDS  = 22,  // Record Boundaries
+    TCP_OPT_KIND_CORRUPT_EXP    = 23,  // Corruption Experienced
+    TCP_OPT_KIND_SNAP           = 24,  // SNAP (???)
+    // -blank-
+    TCP_OPT_KIND_UNASSIGNED25   = 25,  // Unassigned (12/28/2000)
+    // "Steve Bellovin"
+    TCP_OPT_KIND_COMPRESS_FILT  = 26,  // Compression Filter
+    // RFC 4782
+    TCP_OPT_KIND_QUICK_START    = 27,  // Quick-Start Response
+    // RFC 5482
+    TCP_OPT_KIND_USER_TIMEOUT   = 28,  // User Timeout (other uses)
+    // RFC 5925
+    TCP_OPT_KIND_AUTH_OPT       = 29,  // Authentication (TCP-AO)
+    // RFC 8684
+    TCP_OPT_KIND_MULTIPATH      = 30,  // Multipath TCP (MPTCP)
+    // [31-33] RESERVED
+    // RFC 7413
+    TCP_OPT_KIND_FAST_OPEN_COOK = 34,  // Fast Open Cookie
+    // [35-68] RESERVED
+    // RFC 8547
+    TCP_OPT_KIND_ENCRYPT_NEGOT  = 69,  // Encryption Negotiatio
+    // [70-171] RESERVED
+    TCP_OPT_KIND_ACC_ECN_ORD0   = 172, // Accurate ECN Order 0
+    // [173] RESERVED
+    TCP_OPT_KIND_ACC_ECN_ORD1   = 174, // Accurate ECN Order 1
+    // [175-252] RESERVED
+    TCP_OPT_KIND_RFC3692_EXP1   = 253, // RFC 3692 Experiment 1
+    TCP_OPT_KIND_RFC3692_EXP2   = 254, // RFC 3692 Experiment 2
+} tcp_option_kind_t;
+_Pragma ("pack(pop)")
+
+//    0                   1                   2                   3
+//    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |          Source Port          |       Destination Port        |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |                        Sequence Number                        |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |                    Acknowledgment Number                      |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |  Data |       |C|E|U|A|P|R|S|F|                               |
+//   | Offset| Rsrvd |W|C|R|C|S|S|Y|I|            Window             |
+//   |       |       |R|E|G|K|H|T|N|N|                               |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |           Checksum            |         Urgent Pointer        |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |                           [Options]                           |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//   |                                                               :
+//   :                             Data                              :
+//   :                                                               |
+//   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 typedef struct tcp_hdr {
     uint16_t             sport;        // Source port number
     uint16_t             dport;        // Destination port number
@@ -389,7 +492,7 @@ typedef struct tcp_hdr {
     uint16_t             window;       // Window size
     uint16_t             chksum;       // Checksum
     uint16_t             urgptr;       // Pointer to urgent data
-    //uint32_t           options[];    // TCP Options (0-320 bits)
+    uint32_t             options[];    // TCP Options (0-320 bits)
 } tcp_hdr_t;
 // TODO: Make options a struct
 static_assert(sizeof (tcp_hdr_t) == 20,
