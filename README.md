@@ -22,8 +22,8 @@ Here are some of the performance optimizations specifically done on Blitzping:
 * **Compiler Flags:** Compiling with `-Ofast`, `-flto`, and `-march=native` (these actually had little effect; by this point, the entire bottleneck lays on the Kernel's own `sendto()` routine).
 
 Usage: 
-`blitzping <source IP/CIDR> <source port (ignored)> <destination IP> <destination port>` \
-Example: `./decimator 192.168.123.123/19 1234 10.10.10.10 80` (this would send TCP SYN packets to `10.10.10.10`'s port `80` from a randomly chosen source IP within an entire range of `192.168.96.0` to `192.168.127.255`; source ports are randomly chosen, for now.)
+`blitzping <num. threads> <source IP/CIDR> <dest. IP:Port>` \
+Example: `./blitzping 4 192.168.123.123/19 10.10.10.10:80` (this would send TCP SYN packets to `10.10.10.10`'s port `80` from a randomly chosen source IP within an entire range of `192.168.96.0` to `192.168.127.255`, using `4` threads.)
 
 ## Benchmarks
 
@@ -40,7 +40,7 @@ hping3 --flood --spoof 192.168.123.123 --syn 10.10.10.10
 nping --count 0 --rate 1000000 --hide-sent --no-capture --privileged --send-eth --source-ip 192.168.123.123 --source-port random --dest-ip 10.10.10.10 --tcp --flags syn
 ```
 ```
-./decimator 192.168.123.123/19 1234 10.10.10.10 80
+./blitzping 4 192.168.123.123/19 10.10.10.10:80
 ```
 
 
