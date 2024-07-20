@@ -47,14 +47,14 @@ bool verify_system() {
     // the time of compilation.
     endianness_t runtime_endianness = check_endianness();
 
-#if TARGET_ENDIANNESS == little_endian
+#if defined(__LITTLE_ENDIAN__)
     if (runtime_endianness != little_endian) {
-        fprintf(stderr, "[WARNING]: Code was compiled for little endian, "
-                "but this machine is big endian!");
-#elif TARGET_ENDIANNESS == big_endian
+        fprintf(stderr, "[CRITICAL]: Code was compiled for little "
+                "endian, but this machine is somehow big endian!\n");
+#elif defined(__BIG_ENDIAN__)
     if (runtime_endianness != big_endian) {
-        fprintf(stderr, "[WARNING]: Code was compiled for big endian, "
-                "but this machine is little endian!");
+        fprintf(stderr, "[CRITICAL]: Code was compiled for big "
+                "endian, but this machine is somehow little endian!\n");
 #endif
         checks_succeeded = false;
     }

@@ -3,7 +3,7 @@
 // netinet.h is a part of Blitzping.
 // ---------------------------------------------------------------------
 
-#pragma once
+_Pragma ("once")
 #ifndef NETINET_H
 #define NETINET_H
 
@@ -30,6 +30,10 @@
 
 // NOTE: Binary integer literals (e.g., 0b10101010) are a GNU extension;
 // unfortunately, they are not part of the C11 standard. (C23 N2549)
+
+// NOTE: Use the standard C99 _Pragma statement rather than #pragma.
+
+// NOTE: You cannot use enums directly inside macro expansions!
 
 // NOTE: C does not let you put "flexible array members" inside
 // of unions (or nested structs in unions), even if they both
@@ -66,10 +70,9 @@
 #   define ENUM_UNDERLYING(type) __attribute__((packed))
 #endif
 
-
 typedef enum endianness {
     little_endian,
-    big_endian
+    big_endian,
 } endianness_t;
 
 // Check endianness at compile-time for the target machine
@@ -77,18 +80,11 @@ typedef enum endianness {
                                 || defined(__BIG_ENDIAN__))
 #   if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #       define __LITTLE_ENDIAN__
-#       define TARGET_ENDIANNESS little_endian
 #   elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #       define __BIG_ENDIAN__
-#       define TARGET_ENDIANNESS big_endian
 #   else
-#       pragma message("Unknown endianness: \n" \
-            "define \'__LITTLE_ENDIAN__\' or \'__BIG_ENDIAN__\'.")
+#       error "Define endianness: __LITTLE_ENDIAN__ or __BIG_ENDIAN__."
 #   endif
-#elif defined(__LITTLE_ENDIAN__)
-#   define TARGET_ENDIANNESS little_endian
-#elif defined(__BIG_ENDIAN__)
-#   define TARGET_ENDIANNESS big_endian
 #endif
 
 // Double-check endianness at runtime on the target machine.
@@ -119,17 +115,17 @@ typedef union ip_addr_view {
 
 
 // IP Protocol definitions
-#pragma pack(push)
+_Pragma ("pack(push)")
 typedef enum __attribute__((packed)) ip_proto {
     IP_PROTO_IP   = 0,
     IP_PROTO_ICMP = 1,
     IP_PROTO_TCP  = 6,
     IP_PROTO_UDP  = 17,
 } ip_proto_t;
-#pragma pack(pop)
+_Pragma ("pack(pop)")
 
 
-#pragma pack(push)
+_Pragma ("pack(push)")
 typedef enum __attribute__((packed)) ip_tos_prec {
     // RFC 791
     IP_TOS_PREC_ROUTINE              = 1, // 0b000
@@ -141,11 +137,11 @@ typedef enum __attribute__((packed)) ip_tos_prec {
     IP_TOS_PREC_INTERNETWORK_CONTROL = 6, // 0b110
     IP_TOS_PREC_NETWORK_CONTROL      = 7, // 0b111
 } ip_tos_prec_t;
-#pragma pack(pop)
+_Pragma ("pack(pop)")
 
 // ECN Operations definitions
 // (NOT backward-compatible with the old ToS field.)
-#pragma pack(push)
+_Pragma ("pack(push)")
 typedef enum __attribute__((packed)) ip_ecn_code {
     // RFC 3168
     IP_ECN_NOT_ECT = 0, // 0b00: Not ECN-Capable Transport
@@ -155,12 +151,12 @@ typedef enum __attribute__((packed)) ip_ecn_code {
     IP_ECN_ECT_0   = 2, // 0b10: ECN-Capable Transport 0
     IP_ECN_CE      = 3, // 0b11: Congestion Experienced (CE)
 } ip_ecn_code_t;
-#pragma pack(pop)
+_Pragma ("pack(pop)")
 
 // DSCP definitions / Per-Hop Behaviors
 // (somewhat backward-compatible with the old ToS precedence bits.)
 // iana.org/assignments/dscp-registry/dscp-registry.xhtml
-#pragma pack(push)
+_Pragma ("pack(push)")
 typedef enum __attribute__((packed)) ip_dscp_code {
     /* DSCP Pool 1 Codepoints () */
     // RFC 2474 (Class Selector PHBs)
@@ -196,7 +192,7 @@ typedef enum __attribute__((packed)) ip_dscp_code {
     // RFC 8622
     IP_DSCP_LE   = 1,  // Lower-Effort PHB
 } ip_dscp_code_t;
-#pragma pack(pop)
+_Pragma ("pack(pop)")
 
 // The "Type of Service" field is largely unused (or ignored) nowadays.
 // It went through many changes, which makes it confusing to see how it
@@ -225,13 +221,13 @@ union ip_tos_view {
 };
 
 // IP flag definitions
-#pragma pack(push)
+_Pragma ("pack(push)")
 typedef enum __attribute__((packed)) ip_flags {
     IP_FLAG_EV = 1 << 2, // 0b100: Reserved bit (RFC 3514 "evil bit")
     IP_FLAG_DF = 1 << 1, // 0b010: Don't Fragment
     IP_FLAG_MF = 1 << 0, // 0b001: More Fragments
 } ip_flag_t;
-#pragma pack(pop)
+_Pragma ("pack(pop)")
 
 // Cannot nest bitfields and pack them externally; read the top note.
 //
@@ -335,7 +331,7 @@ static_assert(sizeof (ip_hdr_t) == 20,
 */
 
 // TCP flag definitions
-#pragma pack(push)
+_Pragma ("pack(push)")
 typedef enum __attribute__((packed)) tcp_flags {
     TCP_FLAG_FIN = 1 << 0, // 0b00000001: Finish
     TCP_FLAG_SYN = 1 << 1, // 0b00000010: Synchronize
@@ -346,7 +342,7 @@ typedef enum __attribute__((packed)) tcp_flags {
     TCP_FLAG_ECE = 1 << 6, // 0b01000000: ECN-Echo
     TCP_FLAG_CWR = 1 << 7, // 0b10000000: Congestion Window Reduced
 } tcp_flag_t;
-#pragma pack(pop)
+_Pragma ("pack(pop)")
 //static_assert(sizeof (tcp_flag_t) == sizeof (uint8_t),
 //            "TCP Flag field should not be different from a uint8_t!");
 
