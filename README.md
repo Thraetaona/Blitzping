@@ -20,7 +20,7 @@ Here are some of the performance optimizations specifically done on Blitzping:
 * **Asynchronous:** Configuring raw sockets to be non-blocking by default;
 * **Socket Binding:** Using `connect()` to bind a raw socket to its destination only once, replacing `sendto()`/`sendmmsg()` with `write()`/`writev()`;
 * **Queueing:** Queues many packets to get processed *inside* the kernelspace (i.e., `writev()`), rather repeating userspace->kernelspace syscalls;
-* **Memory:** Locking memory pages and allocating the packet buffer in an *aligne* manner;
+* **Memory:** Locking memory pages and allocating the packet buffer in an *aligned* manner;
 * **Multithreading:** Polling the same socket in `sendto()` from multiple threads; and
 * **Compiler Flags:** Compiling with `-Ofast`, `-flto`, and `-march=native` (these actually had little effect; by this point, the entire bottleneck lays on the Kernel's own `sendto()` routine).
 
