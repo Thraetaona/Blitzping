@@ -26,12 +26,16 @@
 #include <stdbool.h>
 #include <threads.h> // C11 threads (glibc >=2.28, musl >=1.1.5)
 
-#include <unistd.h>
+#if defined(_POSIX_C_SOURCE)
+#   include <unistd.h>
+#elif defined(_WIN32)
+//# 
+#endif
 
 #include "parser.h"
 #include "packet.h"
 #include "socket.h"
-#include "netinet.h"
+#include "./netlib/netinet.h"
 
 #define MAX_THREADS 100 // Arbitrary limit
 
@@ -84,6 +88,7 @@ int main(int argc, char const *argv[]) {
         return EXIT_FAILURE;
     }
 
+
     struct pkt_args thread_args;
     thread_args.sock = socket_descriptor;
     thread_args.src_ip_start.address = args.src_ip_range.start.address;
@@ -116,7 +121,16 @@ int main(int argc, char const *argv[]) {
         }
     }
 
-    close(socket_descriptor);
+
+    if (shutdown(socket_descriptor, SHUT_RDWR) == -1) {
+        perror("Failed to shutdown the socket");
+        return EXIT_FAILURE;
+    }
+
+    if (close(socket_descriptor) == -1) {
+        perror("Failed to close the socket");
+        return EXIT_FAILURE;
+    }
 
     printf("Done; exiting...\n");
     return EXIT_SUCCESS;

@@ -8,17 +8,25 @@
 #define PACKET_H
 
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdalign.h>
+#include <errno.h>
 #include <time.h>
 
-#include "netinet.h"
+#include "./netlib/netinet.h"
 
 #if defined(_POSIX_C_SOURCE)
+#   include <unistd.h>
+#   include <limits.h>
 #   include <arpa/inet.h>
+#   include <sys/mman.h>
+#   include <sys/uio.h>
 #elif defined(_WIN32)
 //#include <winsock2.h>
 #endif
+
+extern int errno; // Declared in <errno.h>
 
 #define IP_PKT_MTU 1500 // Same as Ethernet II MTU (bytes)
 

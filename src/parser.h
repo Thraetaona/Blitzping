@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "netinet.h"
+#include "./netlib/netinet.h"
 
 #if defined(_POSIX_C_SOURCE)
 #   include <arpa/inet.h>
