@@ -18,6 +18,9 @@ I found [hping3](https://linux.die.net/man/8/hping3) and nmap's [nping](https://
 Here are some of the performance optimizations specifically done on Blitzping:
 * **Pre-Generation:** All the static parts of the packet buffer get generated once, outside of the `sendto()` tightloop;
 * **Asynchronous:** Configuring raw sockets to be non-blocking by default;
+* **Socket Binding:** Using `connect()` to bind a raw socket to its destination only once, replacing `sendto()`/`sendmmsg()` with `write()`/`writev()`;
+* **Queueing:** Queues many packets to get processed *inside* the kernelspace (i.e., `writev()`), rather repeating userspace->kernelspace syscalls;
+* **Memory:** Locking memory pages and allocating the packet buffer in an *aligne* manner;
 * **Multithreading:** Polling the same socket in `sendto()` from multiple threads; and
 * **Compiler Flags:** Compiling with `-Ofast`, `-flto`, and `-march=native` (these actually had little effect; by this point, the entire bottleneck lays on the Kernel's own `sendto()` routine).
 
@@ -43,20 +46,21 @@ nping --count 0 --rate 1000000 --hide-sent --no-capture --privileged --send-eth 
 ./blitzping 4 192.168.123.123/19 10.10.10.10:80
 ```
 
+### NOTE: The MIPS device still has "old" statistics; I updated Blitzping to use `writev()`, making it significantly faster (tested on ARMv8-A)
 
 ### Quad-Core "Rockchip RK3328" CPU @ 1.3 GHz. (ARMv8-A)
 | ARM (4 x 1.3 GHz) | nping | hping3 | Blitzping |
 |:-|:-|:-|:-|
 | Num. Instances | 4 (1 thread) | 4 (1 thread) | 1 (4 threads) |
-| Pkts. per Second | ~65,000 | ~80,000 | ~275,000 |
-| Bandwidth (MiB/s) | ~2.50 | ~3.00 | ~10.50 |
+| Pkts. per Second | ~65,000 | ~80,000 | ~~\~275,000~~ ~3,150,000 |
+| Bandwidth (MiB/s) | ~2.50 | ~3.00 | ~~\~10.50~~ ~120 |
 
 ### Single-Core "Qualcomm Atheros QCA9533" SoC @ 650 MHz. (MIPS32r2)
 | MIPS (1 x 650 MHz) | nping | hping3 | Blitzping |
 |:-|:-|:-|:-|
 | Num. Instances | 1 (1 thread) | 1 (1 thread) | 1 (1 thread) |
-| Pkts. per Second | ~5,000 | ~10,000 | ~25,000 |
-| Bandwidth (MiB/s) | ~0.20 | ~0.40 | ~1.00 |
+| Pkts. per Second | ~5,000 | ~10,000 | ~~\~25,000~~ |
+| Bandwidth (MiB/s) | ~0.20 | ~0.40 | ~~\~1.00~~ |
 
 # Compilation
 
@@ -67,8 +71,8 @@ Blitzping only uses the standard C11 libraries (`-std=c11`) and some POSIX-2008 
 For example, in case of ARMv8 (aarch64), you will need the following Debian packages:
 * **LLVM and compiler toolchain:** `apt install llvm clang`
 * **LLVM linker:** `apt install lld`
-* **LLVM-strip (optional for `make strip`):** `apt install llvm-binutils`
 * **LLVM libc and libunwind runtimes:** `apt install libclang-rt-dev:arm64 libunwind-dev:arm64`
+* **LLVM-strip** *(optional for `make strip`):* `apt install llvm-binutils`
 
 While aarch64's packages are widely supported on desktop-based Linux distros, Debian (for example) does not provide packages for older embedded targets like 32-bit MIPSeb.  In those cases, if you are not able to manually acquire and compile LLVM's `compile-rt:mips` and `libunwind:mips` to that architecture, you can `apt install libgcc1-mips-cross` and replace `--rtlib=compiler-rt --unwindlib=libunwind` in the makefile with `--rtlib=libgcc --unwindlib=libgcc -static`; this statically links it against the final executable.  You could also `apt install gcc-mips-linux-gnu` and skip LLVM altogether.
 
@@ -87,7 +91,7 @@ Also, both nping and hping3 use non-standard BSD/SystemV-specific extensions to 
 
 ### Why not rewrite it in Rust (or C++)?
 
-Blitzping is intended to support low-power routers and embedded devices; **Rust is a terrible choice for those places.**  For one, you would be interacting with low-level syscalls (e.g., Linux's `sendto()` or `sendmmsg()`); because *there are currently no raw socket wrappers for Rust,* you would be forced to use `unsafe {...}` at every single turn there.  Also, Rust's std library is not available on some of said embedded targets, such as [`mips64-openwrt-linux-musl`](https://doc.rust-lang.org/nightly/rustc/platform-support/mips64-openwrt-linux-musl.html); what will you do in such cases?  **You would have to use libc anyway,** forcing you to painstakingly wrap every single C function around `unsafe {...}` and deal with its lack of interoperability; this literally defeats the entire goal of writing your program in Rust in the first place.  **If anything, Rust's safety features would only tie your own hands.**
+Blitzping is intended to support low-power routers and embedded devices; **Rust is a terrible choice for those places.**  Had Blitzping been a low-level system firmware *or* a high-level application, both `#![no_std]` and `std` Rust would have been suitable choices, respectively.  However, Blitzping exists in a "middle" position, where you are still *required* to use `libc` or other syscalls and yet cannot expect to have the full Rust `std` library on your target.  For one, you would be interacting with low-level syscalls (e.g., Linux's `sendto()` or `sendmmsg()`); because *there are currently no raw socket wrappers for Rust,* you would be forced to use `unsafe {...}` at every single turn there.  Also, Rust's std library is not available on some of said embedded targets, such as [`mips64-openwrt-linux-musl`](https://doc.rust-lang.org/nightly/rustc/platform-support/mips64-openwrt-linux-musl.html); what will you do in such cases?  **You would have to use libc anyway,** forcing you to painstakingly wrap every single C function around `unsafe {...}` and deal with its lack of interoperability; this literally defeats the entire goal of writing your program in Rust in the first place.  **If anything, Rust's safety features would only tie your own hands.**
 
 People don't know how to write safe C code; that is their own fault&mdash;not C's.  C might not be object-oriented like C++ and it might not have the number of compile-time constraining that Ada/Pascal offer, but it at least lets you do what you want to do with relative ease; you just have to know what you want to do with it.  Also, there are plenty of very nice but often overlooked features (e.g., unions, bool, _Static_assert(), threads.h, etc.) in the C99/C11 standards that many people just appear oblivious about.  Finally, compiling your code with `-Wall -Wextra -Werror -pedantic-errors` helps you avoid GNU-specific extensions that might have been making your code less portable or more suspectible to deprecation in future compiler releases; again, people just don't make use of it in the first place.
 
