@@ -104,7 +104,7 @@ int parse_args(
     }
 
     args->num_threads = atoi(argv[1]);
-    if (args->num_threads < 1) {
+    if (args->num_threads < 0) {
         fprintf(stderr, "Invalid number of threads: %d\n", 
                         args->num_threads);
         return EXIT_FAILURE;

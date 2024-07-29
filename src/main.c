@@ -24,7 +24,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <threads.h> // C11 threads (glibc >=2.28, musl >=1.1.5)
 
 #if defined(_POSIX_C_SOURCE)
 #   include <unistd.h>
@@ -36,11 +35,6 @@
 #include "packet.h"
 #include "socket.h"
 #include "./netlib/netinet.h"
-
-#define MAX_THREADS 100 // Arbitrary limit
-
-
-#include <stdio.h>
 
 
 bool verify_system() {
@@ -91,35 +85,14 @@ int main(int argc, char const *argv[]) {
 
     struct pkt_args thread_args;
     thread_args.sock = socket_descriptor;
+    thread_args.num_threads = args.num_threads;
     thread_args.src_ip_start.address = args.src_ip_range.start.address;
     thread_args.src_ip_end.address = args.src_ip_range.end.address;
     thread_args.dest_ip.address = args.dest_ip.address;
     thread_args.dest_port = args.dest_port;
 
 
-    if (args.num_threads == 1) { // Single-threaded; run in main thread.
-        send_packets(&thread_args);
-    }
-    else { // Multi-threaded; spawn additional ones.
-        //thrd_t *threads = malloc(args.num_threads * sizeof (thrd_t));
-        thrd_t threads[MAX_THREADS];
-
-        for (int i = 0; i < args.num_threads; i++) {
-            int thread_status = thrd_create(
-                &threads[i], send_packets, &thread_args
-            );
-
-            if (thread_status != thrd_success) {
-                fprintf(stderr, "Failed to spawn threads.\n");
-                return EXIT_FAILURE;
-            }
-        }
-
-        // TODO: This is never executed; add a signal handler?
-        for (int i = 0; i < args.num_threads; i++) {
-            thrd_join(threads[i], NULL);
-        }
-    }
+    send_packets(&thread_args);
 
 
     if (shutdown(socket_descriptor, SHUT_RDWR) == -1) {
