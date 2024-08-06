@@ -92,6 +92,7 @@ int send_loop(void *args) {
         iov[i].iov_len = packet_length;
     }
 
+    // TODO: Make this user-controllable
     PREFETCH(packet_buffer, 1, 3);
     PREFETCH(iov, 0, 3);
 

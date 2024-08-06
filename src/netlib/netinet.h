@@ -20,7 +20,9 @@ _Pragma ("once")
 
 // NOTE: These included header files should not actually make this
 // file dependent upon libc (at runtime), because they are all
-// "compile-time" dependencies (except assert() that can be disabled).
+// "compile-time" dependencies (except assert() that is unused here).
+// In other words, they should compile just fine under a -ffreestanding
+// or -nolibc environment that lacks libc.
 #include <stdint.h>
 #include <stdbool.h>
 // Uncomment (or define via compiler) to disable runtime assert()
@@ -74,6 +76,12 @@ typedef enum endianness {
     little_endian,
     big_endian,
 } endianness_t;
+
+// NOTE: Unfortunately, only GCC supports the scalar_storage_order
+// attribute/pragma, and LLVM/MSVC don't have it yet; for that reason,
+// we have to resort to old-fashioned macro definitions.
+// https://km.kkrach.de/p_little_vs_big_endian
+// https://github.com/llvm/llvm-project/issues/34641
 
 // Check endianness at compile-time for the target machine
 #if defined(__BYTE_ORDER__) && !(defined(__LITTLE_ENDIAN__) \

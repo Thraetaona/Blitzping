@@ -57,6 +57,20 @@ bool verify_system() {
         checks_succeeded = false;
     }
 
+/*
+#if defined(__GLIBC__)
+    printf("Compiled against glibc.\n");
+#elif defined(__UCLIBC__)
+    printf("Compiled against uClibc.\n");
+#elif defined(__MUSL__)
+    printf("Compiled against musl.\n");
+#elif defined(_MSC_VER)
+    printf("Compiled against MSVCRT or UCRT.\n");
+#else
+    printf("Compiled against an unknown C library.\n");
+#endif
+*/
+
     return checks_succeeded;
 }
 
@@ -82,6 +96,8 @@ int main(int argc, char const *argv[]) {
         return EXIT_FAILURE;
     }
 
+
+    //printf("%s", HELP_TEXT);
 
     struct pkt_args thread_args;
     thread_args.sock = socket_descriptor;

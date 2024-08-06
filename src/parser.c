@@ -122,7 +122,41 @@ int parse_args(
 
     return EXIT_SUCCESS;
 }
+/*
+int parse_args(int argc, char *argv[], struct program_args *args) {
+    for (int i = 1; i < argc; i++) {
+        for (struct option *opt = options; opt->name; opt++) {
+            size_t len = strlen(opt->name);
+            if (strncmp(argv[i], opt->name, len) == 0 && argv[i][len] == '=') {
+                char *value = argv[i] + len + 1;
+                switch (opt->type) {
+                    case OPTION_THREADS:
+                        args->num_threads = atoi(value);
+                        break;
+                    case OPTION_SOURCE:
+                        if (parse_ip_cidr(value, &args->src_ip_range) == EXIT_FAILURE) {
+                            fprintf(stderr, "Failed to parse source IP/CIDR.\n");
+                            return EXIT_FAILURE;
+                        }
+                        break;
+                    case OPTION_DEST:
+                        if (parse_ip_port(value, &args->dest_ip, &args->dest_port) == -1) {
+                            fprintf(stderr, "Failed to parse destination IP:Port.\n");
+                            return EXIT_FAILURE;
+                        }
+                        break;
+                    default:
+                        fprintf(stderr, "Unknown option: %s\n", argv[i]);
+                        return EXIT_FAILURE;
+                }
+                break;
+            }
+        }
+    }
 
+    return EXIT_SUCCESS;
+}
+*/
 
 // ---------------------------------------------------------------------
 // END OF FILE: parser.c

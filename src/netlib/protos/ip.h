@@ -29,11 +29,11 @@ _Pragma ("pack(pop)")
 _Pragma ("pack(push)")
 typedef enum __attribute__((packed)) ip_tos_prec {
     // RFC 791
-    IP_TOS_PREC_ROUTINE              = 1, // 0b000
-    IP_TOS_PREC_PRIORITY             = 2, // 0b001
-    IP_TOS_PREC_IMMEDIATE            = 3, // 0b010
-    IP_TOS_PREC_FLASH                = 4, // 0b011
-    IP_TOS_PREC_FLASH_OVERRIDE       = 5, // 0b100
+    IP_TOS_PREC_ROUTINE              = 0, // 0b000
+    IP_TOS_PREC_PRIORITY             = 1, // 0b001
+    IP_TOS_PREC_IMMEDIATE            = 2, // 0b010
+    IP_TOS_PREC_FLASH                = 3, // 0b011
+    IP_TOS_PREC_FLASH_OVERRIDE       = 4, // 0b100
     IP_TOS_PREC_CRITIC_ECP           = 5, // 0b101
     IP_TOS_PREC_INTERNETWORK_CONTROL = 6, // 0b110
     IP_TOS_PREC_NETWORK_CONTROL      = 7, // 0b111
