@@ -71,7 +71,7 @@ Blitzping only uses standard C11 libraries (`-std=c11`), most of which are [free
 For example, in case of ARMv8 (aarch64), you will need the following Debian packages:
 * **LLVM and compiler toolchain:** `apt install llvm clang`
 * **LLVM linker:** `apt install lld`
-* **LLVM compiler-runtime:** `apt install libclang-rt-dev:arm64` OR `libgcc1-arm64-cross`
+* **LLVM compiler-runtime:** `apt install libclang-rt-dev:arm64` *OR* `apt install libgcc1-arm64-cross`
 * **LLVM-strip** *(optional for `make strip`):* `apt install llvm-binutils`
 
 While aarch64's packages are widely supported on desktop-based Linux distros, Debian (for example) does not provide packages for older embedded targets like 32-bit MIPSeb.  In those cases, if you are not able to manually acquire LLVM's `compile-rt:mips` for that architecture, you can `apt install libgcc1-mips-cross`.  (You could also `apt install gcc-mips-linux-gnu` and skip LLVM/Clang altogether, if you really want to.)
