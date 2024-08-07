@@ -62,22 +62,48 @@ nping --count 0 --rate 1000000 --hide-sent --no-capture --privileged --send-eth 
 | Pkts. per Second | ~5,000 | ~10,000 | ~~\~25,000~~ |
 | Bandwidth (MiB/s) | ~0.20 | ~0.40 | ~~\~1.00~~ |
 
-# Compilation
+# Compilation (sample for a Debian 12 host and MIPS32r2 target)
 
-In [`./Makefile`](https://github.com/Thraetaona/Blitzping/blob/main/Makefile), you can set your target device's "target triplet" (e.g., `aarch64-openwrt-linux-musl`, `mipseb-openwrt-linux-uclibc`, `x86_64-unknown-linux-gnu`, etc.) and an optional architecture (e.g., `-march=armv8-a`, `-march=mips32r2`, etc.); `make` will then create an executable for that specific device in the `./out` directory.
+### 1. Install the toolchain:
+(LLVM/Clang, LLVM Linker, and LLVM-strip)
+```
+apt install llvm clang
+apt install lld
+apt install llvm-binutils
+```
 
-Blitzping only uses standard C11 libraries (`-std=c11`), most of which are [freestanding](https://en.cppreference.com/w/cpp/freestanding), and some POSIX-2008 networking headers (`-D _POSIX_C_SOURCE=200809L`), without any BSD-, SystemV-, or GNU-specific extensions; it can be compiled by both LLVM and GCC with no performance penalty.  However, because of LLVM being much more straightforward in cross-compiling to other architectures with its ["target triplets,"](https://clang.llvm.org/docs/CrossCompilation.html) I configured the makefile to use that toolchain (i.e., clang, lld, and llvm-strip) by default.
+#### 1.a. Install the host's compiler runtime (`compiler-rt` *or* `libgcc`) for your target machine's architecture:
 
-For example, in case of ARMv8 (aarch64), you will need the following Debian packages:
-* **LLVM and compiler toolchain:** `apt install llvm clang`
-* **LLVM linker:** `apt install lld`
-* **LLVM compiler-runtime:** `apt install libclang-rt-dev:arm64` *OR* `apt install libgcc1-arm64-cross`
-* **LLVM-strip** *(optional for `make strip`):* `apt install llvm-binutils`
+```
+apt install libclang-rt-dev:mips
+```
+*OR*
+```
+apt install libgcc1-mips-cross
+```
 
-While aarch64's packages are widely supported on desktop-based Linux distros, Debian (for example) does not provide packages for older embedded targets like 32-bit MIPSeb.  In those cases, if you are not able to manually acquire LLVM's `compile-rt:mips` for that architecture, you can `apt install libgcc1-mips-cross`.  (You could also `apt install gcc-mips-linux-gnu` and skip LLVM/Clang altogether, if you really want to.)
+### 2. Simply specify your ["target triplet"](https://wiki.osdev.org/Target_Triplet) in make; for example, a soft-float big-endian MIPS running Linux (OpenWRT) with musl libc would be as follows:
+```
+make TRIPLET=mips-openwrt-linux-muslsf
+```
+The compiler will then create an executable for your target device in the `./out` directory.  **Make sure that you specify the correct libc (e.g., `musl`, `gnu`, `uclibc`) _and_ whether or not it lacks an FPU (i.e., if it is soft-float and requires an `sf` suffix to libc).**
+
+Optionally, you can specify the target's sub-architecture to optimize specifically for it:
+```
+make TRIPLET=mips-linux-muslsf SUBARCH=mips32r2
+```
+
+As a final and optional postprocesisng step, you could strip the debuginfo symbols out of the compiled program and reduce its size:
+```
+make strip
+```
 
 
-The makefile is configured with `-Wall -Wextra -Wpedantic -Werror -pedantic-errors` by default; it should compile with no warnings.
+Blitzping only uses standard C11 libraries (`-std=c11`), most of which are [freestanding](https://en.cppreference.com/w/cpp/freestanding), and some POSIX-2008 networking headers (`-D _POSIX_C_SOURCE=200809L`), without any BSD-, SystemV-, or GNU-specific extensions; it can be compiled by both LLVM and GCC with no performance penalty.  However, because of LLVM being much more [straightforward](https://clang.llvm.org/docs/CrossCompilation.html) in cross-compiling to other architectures with its target triplets, I configured the makefile to use that toolchain (i.e., clang, lld, and llvm-strip) by default.
+
+While packages of common architectures, such as x86_64 and arm64, are widely supported on desktop-based Linux distros, Debian (for example) does not provide packages for older embedded targets like 32-bit MIPS\[eb\].  In those cases, if you are not able to manually acquire LLVM's `compile-rt:mips` for that architecture, you could always `apt install libgcc1-mips-cross` for libgcc.  (As mentioned earlier, you could also `apt install gcc-mips-linux-gnu` and skip LLVM/Clang altogether, if you really want to.)
+
+The makefile is configured with `-Wall -Wextra -Wpedantic -Werror -pedantic-errors` by default; it should compile with no warnings.  Also, Blitzping's makefile has additional workarounds for [LLVM/Clang's bug with soft-core targets.](https://github.com/llvm/llvm-project/issues/102259)
 
 NOTE: If your router uses LibreCMC, be aware that the system's libc might be too old to run C programs like this; to fix that, you could either take the risk and unflag that specific package via `opkg` in order to upgrade it, or you could flash the more modern OpenWRT onto your router.
 
