@@ -93,7 +93,7 @@ SOFT_FLOAT := $(if $(findstring sf,$(TRIPLET)),true,false)
 
 # Patches for soft-core targets.
 ifeq ($(SOFT_FLOAT),true)
-	CCOPT += -msoft-float
+	CCOPT += -msoft-float -flto
 	# Append "-sf" to the libc name for the dynamic linker.
 	LDOPT += -Wl,--dynamic-linker=/lib/ld-$(LIBC)-$(ARCH)-sf.so.1
 endif
