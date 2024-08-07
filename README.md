@@ -51,7 +51,7 @@ nping --count 0 --rate 1000000 --hide-sent --no-capture --privileged --send-eth 
 |:-|:-|:-|:-|
 | Num. Instances | 4 (1 thread) | 4 (1 thread) | 1 (4 threads) |
 | Pkts. per Second | ~65,000 | ~80,000 |~3,150,000 |
-| Bandwidth (MiB/s) | ~2.50 | ~3.00 | ~100 |
+| Bandwidth (MiB/s) | ~2.50 | ~3.00 | ~120 |
 
 ### Single-Core "Qualcomm Atheros QCA9533" SoC @ 650 MHz. (MIPS32r2)
 | MIPS (1 x 650 MHz) | nping | hping3 | Blitzping |
