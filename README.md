@@ -46,21 +46,19 @@ nping --count 0 --rate 1000000 --hide-sent --no-capture --privileged --send-eth 
 ./blitzping 4 192.168.123.123/19 10.10.10.10:80
 ```
 
-### NOTE: The MIPS device still has "old" statistics; I updated Blitzping to use `writev()`, making it significantly faster (tested on ARMv8-A)
-
 ### Quad-Core "Rockchip RK3328" CPU @ 1.3 GHz. (ARMv8-A)
 | ARM (4 x 1.3 GHz) | nping | hping3 | Blitzping |
 |:-|:-|:-|:-|
 | Num. Instances | 4 (1 thread) | 4 (1 thread) | 1 (4 threads) |
-| Pkts. per Second | ~65,000 | ~80,000 | ~~\~275,000~~ ~3,150,000 |
-| Bandwidth (MiB/s) | ~2.50 | ~3.00 | ~~\~10.50~~ ~120 |
+| Pkts. per Second | ~65,000 | ~80,000 |~3,150,000 |
+| Bandwidth (MiB/s) | ~2.50 | ~3.00 | ~100 |
 
 ### Single-Core "Qualcomm Atheros QCA9533" SoC @ 650 MHz. (MIPS32r2)
 | MIPS (1 x 650 MHz) | nping | hping3 | Blitzping |
 |:-|:-|:-|:-|
 | Num. Instances | 1 (1 thread) | 1 (1 thread) | 1 (1 thread) |
-| Pkts. per Second | ~5,000 | ~10,000 | ~~\~25,000~~ |
-| Bandwidth (MiB/s) | ~0.20 | ~0.40 | ~~\~1.00~~ |
+| Pkts. per Second | ~5,000 | ~10,000 | ~420,000 |
+| Bandwidth (MiB/s) | ~0.20 | ~0.40 | ~16 |
 
 # Compilation (sample for a Debian 12 host and MIPS32r2 target)
 
