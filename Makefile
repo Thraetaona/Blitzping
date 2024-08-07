@@ -3,7 +3,7 @@
 # Program name
 TARGET = blitzping
 # Target triplet (https://wiki.osdev.org/Target_Triplet)
-TRIPLET ?= aarch64-linux-musl #mips-openwrt-linux-muslsf
+TRIPLET ?= #mips-openwrt-linux-muslsf
 # Target sub-architecture
 SUBARCH ?= 
 
@@ -39,10 +39,12 @@ CCOPT = \
 	-std=c11 -ffreestanding -D NDEBUG -D _POSIX_C_SOURCE=200809L \
 	-Wall -Wextra -Wpedantic -Werror -pedantic-errors \
 	-MMD -MP \
-	-O3 -flto \
-	--target=$(TRIPLET)
+	-O3 -flto
 
-# Add -march=$(SUBARCH) to CCOPT if it isn't empty.
+# Add triple and architecture to CCOPT if they aren't empty.
+ifneq ($(TRIPLET),)
+	CCOPT += --target=$(TRIPLET)
+endif
 ifneq ($(SUBARCH),)
 	CCOPT += -march=$(SUBARCH)
 endif
