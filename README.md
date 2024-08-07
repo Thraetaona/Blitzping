@@ -93,7 +93,7 @@ Optionally, you can specify the target's sub-architecture to optimize specifical
 make TRIPLET=mips-linux-muslsf SUBARCH=mips32r2
 ```
 
-As a final and optional postprocesisng step, you could strip the debuginfo symbols out of the compiled program and reduce its size:
+As a final and optional post-processing step, you could strip the debuginfo symbols out of the compiled program and reduce its size:
 ```
 make strip
 ```
