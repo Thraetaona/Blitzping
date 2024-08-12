@@ -116,6 +116,7 @@ make TRIPLET=mips-linux-muslsf SUBARCH=mips32r2
 (As mentioned earlier, you could also `apt install gcc-mips-linux-gnu` and skip LLVM/Clang altogether, if you really want to.)
 
 NOTE: If your router uses LibreCMC, be aware that the system's libc might be too old to run C programs like this; to fix that, you could either take the risk and unflag that specific package via `opkg` in order to upgrade it, or you could flash the more modern OpenWRT onto your router.
+NOTE: Sometimes, your target might have a different name for its libgcc, such as `libgcc-12-dev-m68k-cross` (Debian example).
 
 # FAQs
 
