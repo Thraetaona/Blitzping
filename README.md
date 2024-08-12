@@ -30,7 +30,7 @@ Example: `./blitzping 4 192.168.123.123/19 10.10.10.10:80` (this would send TCP 
 
 ## Benchmarks
 
-I tested Blitzping against both hpign3 and nping on two different routers, both running OpenWRT 23.05.03 (Linux Kernel v5.15.150) with the "masquerading" option (i.e., NAT) turned off in firewall; one device was a single-core 32-bit MIPS SoC, and another was a 64-bit quad-core ARMv8 CPU.  On the quad-core CPU, because both hping3 and nping were designed without multithreading capabilities (unlike Blitzping), I made the competition "fairer" by launching  them as four individual processes, as opposed to Blitzping only using one.  Across all runs and on both devices, CPU usage remained at 100%, entirely dedicated to the currently running program.  Finally, the connection speed itself was not a bottleneck: both devices were connected to an otherwise-unused 200 Mb/s (23.8419 MiB/s) download/upload line through a WAN ethernet interface.
+I tested Blitzping against both hpign3 and nping on two different routers, both running OpenWRT 23.05.03 (Linux Kernel v5.15.150) with the "masquerading" option (i.e., NAT) turned off in firewall; one device was a single-core 32-bit MIPS SoC, and another was a 64-bit quad-core ARMv8 CPU.  On the quad-core CPU, because both hping3 and nping were designed without multithreading capabilities (unlike Blitzping), I made the competition "fairer" by launching  them as four individual processes, as opposed to Blitzping only using one.  Across all runs and on both devices, CPU usage remained at 100%, entirely dedicated to the currently running program.  Finally, the network interface cards ("NICs") themselves were not bottlenecks: the MIPS SoC had a 100 Mbps (~95.3674 MiB/s) NIC and the ARMv8 a 1000 Mbps (~953.674 MiB/s).
 
 It is important to note that Blitzping was not doing any less than hping3 and nping; in fact, *it was doing more.*  While hping3 and nping only randomized the source IP and port of each packet to a fixed address, Blitzping randomized not only the source port but also the IP *within an CIDR range*---a capability that is more computionally intensive and a feature that both hping3 and nping lacked in the first place.
 
@@ -63,8 +63,9 @@ nping --count 0 --rate 1000000 --hide-sent --no-capture --privileged --send-eth 
 # Compilation
 
 
-Blitzping only uses standard C11 libraries (`-std=c11`), most of which are [freestanding](https://en.cppreference.com/w/cpp/freestanding), and some POSIX-2008 networking headers (`-D _POSIX_C_SOURCE=200809L`), without any BSD-, SystemV-, or GNU-specific extensions; it can be compiled by both LLVM and GCC with no performance penalty.  However, because of LLVM being much more [straightforward](https://clang.llvm.org/docs/CrossCompilation.html) in cross-compiling to other architectures with its target triplets, I configured the makefile to use that toolchain (i.e., clang, lld, and llvm-strip) by default.
+Blitzping uses C11 syntax but without any hard dependencies on actual C11 headers, so **it can compile under C89 just fine.[^1]**  Blitzping usage of libc is mostly [freestanding](https://en.cppreference.com/w/cpp/freestanding), and it only uses standard headers from the 1990 edition of POSIX.1 (IEEE Standard 1003.1-1990), without any BSD-, XSI-, SysV-, or GNU-specific additions.  Blitzping can be compiled by both LLVM and GCC without any performance penalty; however, because of LLVM being much more [straightforward](https://clang.llvm.org/docs/CrossCompilation.html) in cross-compiling to other architectures with its target triplets, I configured the makefile to use that toolchain (i.e., clang, lld, and llvm-strip) by default.  Also, Blitzping's makefile has additional workarounds for [LLVM/Clang's bug with soft-core targets.](https://github.com/llvm/llvm-project/issues/102259)
 
+[^1]: This requires C11 syntax support (without actually including headers or affecting minimum libc version) to be enabled in C89 mode via `-std=gnu89` and disabling warning-errors.
 
 ### Install the LLVM toolchain (if you do not already have it):
 (LLVM/Clang, LLVM Linker, and LLVM-strip)
@@ -113,8 +114,6 @@ make TRIPLET=mips-linux-muslsf SUBARCH=mips32r2
 ```
 
 (As mentioned earlier, you could also `apt install gcc-mips-linux-gnu` and skip LLVM/Clang altogether, if you really want to.)
-
-The makefile is configured with `-Wall -Wextra -Wpedantic -Werror -pedantic-errors` by default; it should compile with no warnings.  Also, Blitzping's makefile has additional workarounds for [LLVM/Clang's bug with soft-core targets.](https://github.com/llvm/llvm-project/issues/102259)
 
 NOTE: If your router uses LibreCMC, be aware that the system's libc might be too old to run C programs like this; to fix that, you could either take the risk and unflag that specific package via `opkg` in order to upgrade it, or you could flash the more modern OpenWRT onto your router.
 
