@@ -8,15 +8,22 @@
 #define PARSER_H
 
 
-#include <stdio.h>
+#include "./netlib/netinet.h"
+
+
 #include <stdbool.h>
-#include <stdlib.h>
+#include <limits.h>
 #include <string.h>
 
-#include "./netlib/netinet.h"
+#include <stdlib.h>
+#include <errno.h>
+
+#include <stdio.h>
 
 #if defined(_POSIX_C_SOURCE)
 #   include <arpa/inet.h>
+#   include <sys/uio.h>
+#   include <unistd.h>
 #elif defined(_WIN32)
 //#   include <winsock2.h>
 #endif
@@ -26,126 +33,75 @@
 #define MAX_IP_CIDR_LENGTH 18 // xxx.xxx.xxx.xxx/xx
 #define MAX_IP_PORT_LENGTH 21 // xxx.xxx.xxx.xxx:xxxxx
 
+// TODO: Move to netlib
 #define PORT_MIN 0
 #define PORT_MAX 65535 // 2^16 - 1
 
-
-// TODO: use ifndef to enable/disable num-threads here.
-// TODO: Do I use \r\n here, or continue relying on libc?
-//
-// NOTE: Unfortunately, C preprocessor is unable to include actual .txt
-// files (which could otherwise be holding this text) into strings.
-// (C23 is apparently able to do this using the new #embed directive.)
-static const char HELP_TEXT[] =
-"Usage: blitzping [options]\n"
-"\n"
-"Options may use either -U (unix style), --gnu-style, or /dos-style\n"
-"conventions, and the \"=\" sign may be omitted.\n"
-"\n"
-"Example:\n"
-"  blitzping --num-threads=4 --proto=tcp --dest-ip=10.10.10.10\n"
-"  blitzping --help=proto\n"
-"\n"
-"General:\n"
-"  -? --help=<command>     Display this help message or more info.\n"
-"  -! --about              Display information about the Program.\n"
-"  -V --version            Display the Program version.\n"
-"  -Q --quiet              Suppress all output except errors.\n"
-"Advanced:\n"
-"     --bypass-checks      Ignore system compatibility issues (e.g., \n"
-"                          wrong endianness) if startup checks fail.\n"
-"                          (May result in unexpected behavior.)\n"
-"     --num-threads=<0-n>  Number of threads to poll the socket with.\n"
-"                          (Default: system thread count; 0: disable\n"
-"                          threading, run everything in main thread.)\n"
-"     --no-async-sock      Use blocking (not asynchronous) sockets.\n"
-"                          (Will severely hinder performance.)\n"
-"     --no-mem-lock        Don't lock memory pages; allow disk swap.\n"
-"                          (May reduce performance.)\n"
-"     --no-prefetch        Don't prefetch packet buffer to CPU cache.\n"
-"                          (May reduce performance.)\n"
-"IPv4/6 Options:\n"
-"     --source-ip=<addr>   IPv4/6 source IP address to spoof.\n"
-"     --dest-ip=<addr>     IPv4/6 destination IP address.\n"
-"     --ver=<4|6|0-15>     IP version to use/spoof (automatic).\n"
-"     --proto=<...|0-255>  [Override] protocol number (e.g., tcp, 6)\n"
-"                          (\"--help=proto\" for textual entries.)\n"
-"     --len=<0-65535>      [Override] total packet (+data) length.\n"
-"     --ttl=<0-255>        Time-to-live (hop-limit) for the packet.\n"
-"IPv4 Options:\n"
-"  -4 --ipv4               IPv4 mode; same as \"--ver=4\"\n"
-"     --ihl=<0-15>         [Override] IPv4 header length in 32-bit\n"
-"                          increments; minimum \"should\" be 5 (i.e.,\n"
-"                          5x32 = 160 bits = 20 bytes) by standard.\n"
-"     --tos=<0-255>        Type of Service; obsolete by DSCP+ECN.\n"
-"     |                    ToS itself is divided into precedence,\n"
-"     |                    throughput, reliability, cost, and mbz:\n"
-"     | --prec=<...|0-7>     IP Precedence/priority (RFC 791).\n"
-"     |                      (\"--help=prec\" for textual entries.)\n"
-"     | --min-delay=<0|1>    Minimize delay\n"
-"     | --max-tput =<0|1>    Maximize throughput\n"
-"     | --max-rely =<0|1>    Maximize reliability\n"
-"     | --min-cost =<0|1>    Minimize monetary cost (RFC 1349)\n"
-"     | --must-zero=<0|1>    MBZ/Must-be-Zero (or must it?)\n"
-"     --dscp=<...|0-64>    Differentiated Services Code Point\n"
-"                          (\"--help=dscp\" for textual entries.)\n"
-"     --ecn=<...|0-3>      Explicit Congestion Notification\n"
-"                          (\"--help=ecn\" for textual entries.)\n"
-"     --ident=<0-65535>    Packet identification (for fragmentation).\n"
-"     --flags=<0-7>        Bitfield for IPv4 flags:\n"
-"     | --evil-bit =<0|1>    RFC 3514 Evil/Reserved bit\n"
-"     | --dont-frag=<0|1>    Don't Fragment (DF)\n"
-"     | --more-frag=<0|1>    More Fragments (MF)\n"
-"     --frag-ofs=<0-8191>  Fragment Offset\n"
-"     --checksum=<0-65535> [Override] IPv4 header checksum.\n"
-"     --options=<UNIMPLEMENTED>\n"
-"IPv6 Options:\n"
-"   [[UNIMPLEMENTED]]\n"
-"  -6 --ipv6               IPv6 mode; same as \"--ver=6\"\n"
-"     --next-header=proto  Alias to \"--proto\" for IPv6.\n"
-"     --hop-limit=ttl      Alias to \"--ttl\" for IPv6.\n"
-"     --flow-label=<0-1048575>\n"
-"                          Flow Label (experimental; RFC 2460).\n"
-"\n";
-
-
-enum OptionKind {
-    OPTION_UNKNOWN = 0,
-    OPTION_THREADS,
-    OPTION_SOURCE,
-    OPTION_DEST_IP,
-};
-
-struct Option {
-    const char *name;
-    bool has_arg;
-    enum OptionKind kind;
-};
-
-static const struct Option options[] = {
-    {"\0", false, OPTION_UNKNOWN},
-    {"num-threads", true, OPTION_THREADS},
-    {"source-ip", true, OPTION_SOURCE},
-    {"dest-ip", true, OPTION_DEST_IP},
-};
-
+extern int errno; // Declared in <errno.h>
 
 struct ip_addr_range {
     ip_addr_t start;
     ip_addr_t end;
 };
 
-struct program_args {
-    int num_threads;
-    struct ip_addr_range src_ip_range;
-    ip_addr_t dest_ip;
-    int dest_port;
+// It is better to contain everything within a single struct, as
+// opposed to having a bunch of global variables all over the place.
+//
+// NOTE: I did not use bitfields here because they are not
+// going to help with compile-time safety, and they'd also
+// come with a performance cost and lack of addressability.
+struct ProgramArgs {
+    // General
+    struct {
+        char *executable_name; // argv[0]
+        endianness_t compile_endianness;
+        endianness_t runtime_endianness;
+        bool has_c11_threads;
+        bool has_posix_threads;
+    } diagnostics;
+    struct {
+        bool opt_help;
+        bool opt_about;
+        bool opt_version;
+        bool opt_quiet;
+    } general;
+    // Advanced
+    struct {
+        bool bypass_checks;
+        unsigned int num_threads;
+        bool native_threads;
+        unsigned int buffer_size;
+        bool no_async_sock;
+        bool no_mem_lock;
+        bool no_prefetch;
+    } advanced;
+    // IPv4
+    struct ip_hdr *ipv4;
+    struct {
+        bool is_ipv4;
+        bool is_ipv6;
+        bool is_cidr;
+        struct {
+            ip_addr_t start;
+            ip_addr_t end;
+        } source_cidr;
+    } ip_misc;
+    // TODO: IPv6
 };
 
-
-int parse_ip_cidr(const char *cidr_str, struct ip_addr_range *ip_range);
-int parse_ip_port(const char *ip_port_str, ip_addr_t *ip, int *port);
-int parse_args(int argc, char const *argv[], struct program_args *args);
+int parse_ip_cidr(
+    const char *cidr_str,
+    struct ip_addr_range *ip_range
+);
+int parse_ip_port(
+    const char *ip_port_str,
+    ip_addr_t *ip, int *port
+);
+int parse_args(
+    const int argc,
+    char *argv[],
+    struct ProgramArgs *const program_args
+);
 
 
 #endif // PARSER_H

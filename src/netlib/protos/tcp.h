@@ -157,7 +157,7 @@ typedef struct tcp_hdr {
     uint32_t             options[];    // TCP Options (0-320 bits)
 } tcp_hdr_t;
 // TODO: Make options a struct
-static_assert(sizeof (tcp_hdr_t) == 20,
+_Static_assert(sizeof (tcp_hdr_t) == 20,
             "An empty tcp_hdr struct should only be 20 bytes!");
 
 

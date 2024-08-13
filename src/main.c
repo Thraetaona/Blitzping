@@ -28,7 +28,7 @@
 #if defined(_POSIX_C_SOURCE)
 #   include <unistd.h>
 #elif defined(_WIN32)
-//# 
+//#
 #endif
 
 #include "parser.h"
@@ -47,35 +47,23 @@ bool verify_system() {
 
 #if defined(__LITTLE_ENDIAN__)
     if (runtime_endianness != little_endian) {
-        fprintf(stderr, "[CRITICAL]: Code was compiled for little "
-                "endian, but this machine is somehow big endian!\n");
+        fprintf(stderr,
+                "[CRITICAL]: Code was compiled for little endian,\n"
+                "but this machine is somehow big endian!\n");
 #elif defined(__BIG_ENDIAN__)
     if (runtime_endianness != big_endian) {
-        fprintf(stderr, "[CRITICAL]: Code was compiled for big "
-                "endian, but this machine is somehow little endian!\n");
+        fprintf(stderr,
+                "[CRITICAL]: Code was compiled for big endian,\n"
+                "but this machine is somehow little endian!\n");
 #endif
         checks_succeeded = false;
     }
-
-/*
-#if defined(__GLIBC__)
-    printf("Compiled against glibc.\n");
-#elif defined(__UCLIBC__)
-    printf("Compiled against uClibc.\n");
-#elif defined(__MUSL__)
-    printf("Compiled against musl.\n");
-#elif defined(_MSC_VER)
-    printf("Compiled against MSVCRT or UCRT.\n");
-#else
-    printf("Compiled against an unknown C library.\n");
-#endif
-*/
 
     return checks_succeeded;
 }
 
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char *argv[]) {
     if (!verify_system()) {
         // TODO: Add an argument to let the user continue regardless.
         //if () {
@@ -86,7 +74,7 @@ int main(int argc, char const *argv[]) {
                         "potentially undefined behavior.\n");
     }
 
-    struct program_args args;
+    struct ProgramArgs args;
     if (parse_args(argc, argv, &args) == EXIT_FAILURE) {
         return EXIT_FAILURE;
     }
@@ -99,29 +87,36 @@ int main(int argc, char const *argv[]) {
 
     //printf("%s", HELP_TEXT);
 
+
     struct pkt_args thread_args;
+    /*
     thread_args.sock = socket_descriptor;
     thread_args.num_threads = args.num_threads;
     thread_args.src_ip_start.address = args.src_ip_range.start.address;
     thread_args.src_ip_end.address = args.src_ip_range.end.address;
     thread_args.dest_ip.address = args.dest_ip.address;
     thread_args.dest_port = args.dest_port;
+    */
 
 
     send_packets(&thread_args);
 
 
     if (shutdown(socket_descriptor, SHUT_RDWR) == -1) {
-        perror("Failed to shutdown the socket");
-        return EXIT_FAILURE;
+        perror("[WARN] Socket shutdow failed");
+    }
+    else {
+        printf("[INFO] Socket shutdown successfully.\n");
     }
 
     if (close(socket_descriptor) == -1) {
-        perror("Failed to close the socket");
-        return EXIT_FAILURE;
+        perror("[WARN] Socket closing failed");
+    }
+    else {
+        printf("[INFO] Socket closed successfully.\n");
     }
 
-    printf("Done; exiting...\n");
+    printf("[INFO] Done; exiting...\n");
     return EXIT_SUCCESS;
 }
 

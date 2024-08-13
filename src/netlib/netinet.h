@@ -20,14 +20,10 @@ _Pragma ("once")
 
 // NOTE: These included header files should not actually make this
 // file dependent upon libc (at runtime), because they are all
-// "compile-time" dependencies (except assert() that is unused here).
-// In other words, they should compile just fine under a -ffreestanding
-// or -nolibc environment that lacks libc.
+// "compile-time" dependencies.  In other words, they should compile
+// just fine under a -ffreestanding or -nolibc environment.
 #include <stdint.h>
 #include <stdbool.h>
-// Uncomment (or define via compiler) to disable runtime assert()
-//#define NDEBUG
-#include <assert.h> // Defines _Static_assert() to be static_assert()
 
 
 // NOTE: Binary integer literals (e.g., 0b10101010) are a GNU extension;

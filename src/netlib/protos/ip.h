@@ -233,7 +233,7 @@ struct {
     uint32_t                options[];      // IP Options (0-320 bits)
 } ip_hdr_t;
 // TODO: Make a struct for IP options
-static_assert(sizeof (ip_hdr_t) == 20,
+_Static_assert(sizeof (ip_hdr_t) == 20,
             "An empty ip_hdr struct should only be 20 bytes!");
 
 

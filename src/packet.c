@@ -21,7 +21,7 @@ int send_loop(void *args) {
 
     // Initialize an empty packet buffer on the stack and align it
     // for potentially faster access from memory.
-    alignas (alignof (max_align_t)) uint8_t packet_buffer[IP_PKT_MTU] = {0};
+    _Alignas (_Alignof (max_align_t)) uint8_t packet_buffer[IP_PKT_MTU] = {0};
 
 
     // Make the IP and TCP header structures "point" to their
@@ -86,7 +86,7 @@ int send_loop(void *args) {
     // bypassing expensive syscalls.
     // TODO: Maybe pre-craft the changing parts of multiple packeets,
     // as to "queue" them for sending?
-    alignas (alignof (max_align_t)) struct iovec iov[UIO_MAXIOV];
+    _Alignas (_Alignof (max_align_t)) struct iovec iov[UIO_MAXIOV];
     for (int i = 0; i < 37; i++) {
         iov[i].iov_base = packet_buffer;
         iov[i].iov_len = packet_length;
@@ -128,8 +128,11 @@ int send_loop(void *args) {
         //}
     }*/
 
-
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_THREADS__)
     return thrd_success;
+#else
+    return 0;
+#endif
 }
 
 
@@ -191,11 +194,26 @@ int send_packets(struct pkt_args *args) {
 
 
 
+// TODO: Use dlsym to check for thrds at RUNTIME.
     if (packet_info->num_threads == 0) { // Run in main thread.
         send_loop(packet_info);
     }
     else { // Multi-threaded
-        //thrd_t *threads = malloc(args.num_threads * sizeof (thrd_t));
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_THREADS__)
+    // Check if thrd_create is NULL
+        if (!thrd_create || !thrd_join) {
+            fprintf(stderr,
+                "This program was compiled with C11 <threads.h>,\n"
+                "but this system appears to lack thrd_create() or\n"
+                "thrd_join(); this could be due to an old C library.\n"
+                "try using \"--native-threads\" for POSIX/Win32\n"
+                "threads or \"--num-threads=0\" to disable threading.\n"
+            );
+            return 1;
+        }
+
+        //thrd_t *threads =
+        //    malloc(args.num_threads * sizeof (thrd_t));
         thrd_t threads[MAX_THREADS];
 
         for (int i = 0; i < packet_info->num_threads; i++) {
@@ -205,7 +223,7 @@ int send_packets(struct pkt_args *args) {
 
             if (thread_status != thrd_success) {
                 fprintf(stderr, "Failed to spawn thread %d.\n", i);
-                // Cleanup already created threads
+                // Cleanup already-created threads
                 for (int j = 0; j < i; j++) {
                     thrd_join(threads[j], NULL);
                 }
@@ -218,7 +236,14 @@ int send_packets(struct pkt_args *args) {
         for (int i = 0; i < packet_info->num_threads; i++) {
             thrd_join(threads[i], NULL);
         }
-
+#else
+        fprintf(stderr,
+            "This program was compiled without C11 <threads.h>;\n"
+            "try using \"--native-threads\" for POSIX/Win32\n"
+            "threads or \"--num-threads=0\" to disable threading.\n"
+        );
+        return 1;
+#endif
     }
 
 
@@ -227,10 +252,10 @@ int send_packets(struct pkt_args *args) {
 
     if (munlockall() == -1) {
         perror("Failed to unlock used memory");
-        return EXIT_FAILURE;
+        return 1;
     }
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 
