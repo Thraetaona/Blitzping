@@ -23,8 +23,13 @@
 // going to help with compile-time safety, and they'd also
 // come with a performance cost and lack of addressability.
 typedef struct ProgramArgs {
-    int socket;
-    // Internal Diagnostics
+    int socket; // Socket descriptor
+    // Parser Internals
+    struct {
+        osi_layer_t current_layer;
+        osi_proto_t current_proto;
+    } parser;
+    // System Diagnostics
     struct {
         char *executable_name; // argv[0]
         bool unrecoverable_error;
@@ -52,20 +57,9 @@ typedef struct ProgramArgs {
         unsigned int buffer_size;
         bool no_async_sock;
         bool no_mem_lock;
-        bool no_prefetch;
+        bool no_cpu_prefetch;
     } advanced;
     // IPv4
-    struct {
-        struct {
-            bool ipv4;
-            bool ipv6;
-        } layer_3;
-        struct {
-            bool tcp;
-            bool udp;
-            bool icmp; // ICMP shouldn't belong in L2.
-        } layer_4;
-    } protocol;
     struct ip_hdr *ipv4;
     struct {
         bool is_cidr;

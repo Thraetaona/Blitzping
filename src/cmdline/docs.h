@@ -48,174 +48,161 @@ Usage: blitzping [options]\n\
 Options may use either -U (unix style), --gnu-style, or /dos-style\n\
 conventions, and the \"=\" sign may be omitted.\n\
 \n\
-Example:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n\
   blitzping --num-threads=4 --proto=tcp --dest-ip=10.10.10.10\n\
   blitzping --help=proto\n\
 \n\
-General:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n\
-  -? --help=<command>     Display this help message or more info.\n\
-  -! --about              Display information about the Program.\n\
-  -V --version            Display the Program version.\n\
-  -Q --quiet              Suppress all output except errors.\n\
-Advanced::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n\
-  -$ --bypass-checks      Ignore system compatibility issues (e.g., \n\
-                          wrong endianness) if startup checks fail.\n\
-                          (May result in unexpected behavior.)\n\
-     --logger-level=<n>   Set the verbosity level of the logger.\n\
-                          (-1: off, 0: critical, 1: error, 2: warn\n\
-                          3: info, 4: debug; default: 3.)\n\
-     --no-log-timestamp   Don't prefix log messages with timestamps.\n\
-  -# --num-threads=<0-n>  Number of threads to poll the socket with.\n\
-                          (Default: system thread count; 0: disable\n\
-                          threading, run everything in main thread.)\n\
-     --native-threads     If both C11 libc <threads.h> and native\n\
-                          (i.e., POSIX/Win32) threads are available,\n\
-                          will prefer the native implementation.\n\
-     --buffer-size=<0-n>  Number of packets to pre-craft and pass to\n\
-                          the kernel in batches. (default: as many\n\
-                          as possible; 0: disable buffering.)\n\
-     --no-async-sock      Use blocking (not asynchronous) sockets.\n\
-                          (Will severely hinder performance.)\n\
-     --no-mem-lock        Don't lock memory pages; allow disk swap.\n\
-                          (May reduce performance.)\n\
-     --no-prefetch        Don't prefetch packet buffer to CPU cache.\n\
-                          (May reduce performance.)\n\
+::::::::::::::::::::::::::::::::General:::::::::::::::::::::::::::::::::\n\
+-? --help=<command>         Display this help message or more info.\n\
+-! --about                  Display information about the Program.\n\
+-V --version                Display the Program version.\n\
+-Q --quiet                  Suppress all output except errors.\n\
+::::::::::::::::::::::::::::::::Advanced::::::::::::::::::::::::::::::::\n\
+-$ --bypass-checks          Ignore system compatibility issues (e.g., \n\
+                            wrong endianness) if startup checks fail.\n\
+                            (May result in unexpected behavior.)\n\
+   --logger-level=<n>       Set the verbosity level of the logger.\n\
+                            (-1: off, 0: critical, 1: error, 2: warn\n\
+                            3: info, 4: debug; default: 3.)\n\
+   --no-log-timestamp       Don't prefix log messages with timestamps.\n\
+-# --num-threads=<0-n>      Number of threads to poll the socket with.\n\
+                            (Default: system thread count; 0: disable\n\
+                            threading, run everything in main thread.)\n\
+   --native-threads         If both C11 libc <threads.h> and native\n\
+                            (i.e., POSIX/Win32) threads are available,\n\
+                            will prefer the native implementation.\n\
+   --buffer-size=<0-n>      Number of packets to pre-craft and pass to\n\
+                            the kernel in batches. (default: as many\n\
+                            as possible; 0: disable buffering.)\n\
+   --no-async-sock          Use blocking (not asynchronous) sockets.\n\
+                            (Will severely hinder performance.)\n\
+   --no-mem-lock            Don't lock memory pages; allow disk swap.\n\
+                            (May reduce performance.)\n\
+   --no-cpu-prefetch        Don't prefetch packet buffer to CPU cache.\n\
+                            (May reduce performance.)\n\
 ";
 
-// TODO: Have a "raw (no protocol) layer 3 option.
+// TODO: Have a layer 2 ether and "raw" (no protocol) layer 3 option.
 
-static const char HELP_TEXT_IPV4[] =
-"L3. IPv4 Header:::::::::::::::::::::::::::::::::::::::::::::::::::::\n\
-    0                   1                   2                   3\n\
-    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1\n\
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\
-   |Version|  IHL  |    DSCP   |ECN|          Total Length         |\n\
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\
-   |         Identification        |Flags|      Fragment Offset    |\n\
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\
-   |  Time to Live |    Protocol   |         Header Checksum       |\n\
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\
-   |                       Source Address                          |\n\
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\
-   |                    Destination Address                        |\n\
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\
-   |                    Options                    |    Padding    |\n\
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\
-  -4 --ipv4               IPv4 layer 3 indicator.\n\
-     --src-ip=<addr>      [Override] IPv4 source address to spoof.\n\
-     --dest-ip=<addr>     IPv4 destination address.\n\
-     --ver=<4|0-15>       [Override] IP version to spoof.\n\
-     --ihl=<5|0-15>       [Override] IPv4 header length in 32-bit\n\
-                          increments; minimum \"should\" be 5 (i.e.,\n\
-                          5x32 = 160 bits = 20 bytes) by standard.\n\
-     --tos=<0-255>        Type of Service; obsolete by DSCP+ECN.\n\
-     |                    ToS itself is divided into precedence,\n\
-     |                    throughput, reliability, cost, and mbz:\n\
-     | --prec=<...|0-7>     RFC 791 IP Precedence/priority\n\
-     |                      (\"--help=prec\" for textual entries);\n\
-     | --min-delay          Minimize delay;\n\
-     | --max-tput           Maximize throughput;\n\
-     | --max-rely           Maximize reliability;\n\
-     | --min-cost           Minimize monetary cost (RFC 1349); and\n\
-     | --mbz-one            Set the MBZ (\"Must-be-Zero\") bit to 1.\n\
-     --dscp=<...|0-64>    Differentiated Services Code Point\n\
-                          (\"--help=dscp\" for textual entries.)\n\
-     --ecn=<...|0-3>      Explicit Congestion Notification\n\
-                          (\"--help=ecn\" for textual entries.)\n\
-     --len=<0-65535>      [Override] total packet (+data) length.\n\
-     --ident=<0-65535>    Packet identification (in fragmentation).\n\
-     --flags=<0-7>        Bitfield for IPv4 flags:\n\
-     | --evil-bit           RFC 3514 Evil/Reserved bit;\n\
-     | --dont-frag          Don't Fragment (DF); and\n\
-     | --more-frag          More Fragments (MF).\n\
-     --frag-ofs=<0-8191>  Fragment Offset\n\
-     --ttl=<0-255>        Time-to-live (hop-limit) for the packet.\n\
-     --proto=<...|0-255>  [Override] protocol number (e.g., tcp, 6)\n\
-                          (\"--help=proto\" for textual entries.)\n\
-     --chksum=<0-65535>   [Override] IPv4 header checksum.\n\
-     --options=<>         [[UNFINISHED]]\n\
+static const char HELP_TEXT_IPV4[] = "\
+::::::::::::::::::::::::::::L3.  IPv4 Header::::::::::::::::::::::::::::\n\
+| Byte |0,1,2,3,4,5,6,7|0,1,2,3,4,5,6,7|0,1,2,3,4,5,6,7|0,1,2,3,4,5,6,7|\n\
++------+-------+-------+-----------+---+---------------+---------------+\n\
+|  0-4 |Version|  IHL  |    DSCP   |ECN|          Total Length         |\n\
++------+-------+-------+-----------+---+-----+-------------------------+\n\
+|  4-8 |         Identification        |E|D|M|      Fragment Offset    |\n\
++------+---------------+---------------+-----+-------------------------+\n\
+|  8-12|  Time to Live |    Protocol   |         Header Checksum       |\n\
++------+---------------+---------------+-------------------------------+\n\
+| 12-16|                         Source Address                        |\n\
++------+---------------------------------------------------------------+\n\
+| 16-20|                      Destination Address                      |\n\
++------+---------------------------------------------------------------+\n\
+: 20-56:                      [options & padding]                      :\n\
++------+---------------------------------------------------------------+\n\
+-4 --ipv4                   IPv4 layer 3 indicator.\n\
+   --src-ip=<addr>          [OVERRIDE] IPv4 source address to spoof.\n\
+   --dest-ip=<addr>         IPv4 destination address.\n\
+   --ver=<4|0-15>           [OVERRIDE] IP version to spoof.\n\
+   --ihl=<5|0-15>           [OVERRIDE] IPv4 header length in 32-bit\n\
+                            increments; minimum \"should\" be 5 (i.e.,\n\
+                            5x32 = 160 bits = 20 bytes) by standard.\n\
+   --tos=<0-255>            Type of Service; obsolete by DSCP+ECN.\n\
+   |                        ToS itself is divided into precedence,\n\
+   |                        throughput, reliability, cost, and mbz:\n\
+   | --prec=<...|0-7>         RFC 791 IP Precedence/priority\n\
+   |                          (\"--help=prec\" for textual entries);\n\
+   | --min-delay              Minimize delay;\n\
+   | --max-tput               Maximize throughput;\n\
+   | --max-rely               Maximize reliability;\n\
+   | --min-cost               Minimize monetary cost (RFC 1349); and\n\
+   | --mbz-one                Set the MBZ (\"Must-be-Zero\") bit to 1.\n\
+   --dscp=<...|0-64>        Differentiated Services Code Point\n\
+                            (\"--help=dscp\" for textual entries.)\n\
+   --ecn=<...|0-3>          Explicit Congestion Notification\n\
+                            (\"--help=ecn\" for textual entries.)\n\
+   --len=<0-65535>          [OVERRIDE] total packet (+data) length.\n\
+   --ident=<0-65535>        Packet identification (in fragmentation).\n\
+   --flags=<0-7>            Bitfield for IPv4 flags:\n\
+   | --evil-bit               [E]vil (RFC 3514)/Reserved bit;\n\
+   | --dont-frag              [D]on't Fragment (DF); and\n\
+   | --more-frag              [M]ore Fragments (MF).\n\
+   --frag-ofs=<0-8191>      Fragment Offset\n\
+   --ttl=<0-255>            Time-to-live (hop-limit) for the packet.\n\
+   --proto=<...|0-255>      [OVERRIDE] protocol number (e.g., tcp, 6)\n\
+                            (\"--help=proto\" for textual entries.)\n\
+   --chksum=<0-65535>       [OVERRIDE] IPv4 header checksum.\n\
+   --options=<>             [[UNFINISHED]]\n\
 ";
 
 static const char HELP_TEXT_IPV6[] = "\
-L3. IPv6 Header:::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n\
-  -6 --ipv6               IPv6 layer 3 indicator.\n\
-     --src-ip=<addr6>     [Override] IPv6 source address to spoof.\n\
-     --dest-ip=<addr6>    IPv6 destination address.\n\
-     --next-header=       Similar to IPv4's \"proto\" field.\n\
-       <...|0-255>        (\"--help=next-header\" for text entries.)\n\
-     --hop-limit=<0-255>  Similar to IPv4's \"ttl\" field.\n\
-     --flow-label=        Flow Label (experimental; RFC 2460).\n\
-       <0-1048575>\n\
-  [[UNIMPLEMENTED]]\n\
+::::::::::::::::::::::::::::L3.  IPv6 Header::::::::::::::::::::::::::::\n\
+-6 --ipv6                   IPv6 layer 3 indicator.\n\
+   --src-ip=<addr6>         [OVERRIDE] IPv6 source address to spoof.\n\
+   --dest-ip=<addr6>        IPv6 destination address.\n\
+   --next-hdr=<...|0-255>   Next header, akin to IPv4's \"proto\" field.\n\
+                            (\"--help=next-header\" for text entries.)\n\
+   --hop-limit=<0-255>      Similar to IPv4's \"ttl\" field.\n\
+   --flow-label=<0-1048575> Flow Label (experimental; RFC 2460).\n\
+[[UNIMPLEMENTED]]\n\
 ";
 
 // TODO: Make the bitfield also take one-letter flags
 static const char HELP_TEXT_TCP[] = "\
 ::::::::::::::::::::::::::::L4.  TCP Header:::::::::::::::::::::::::::::\n\
-   0                   1                   2                   3\n\
-   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1\n\
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\
-   |          Source Port          |       Destination Port        |\n\
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\
-   |                        Sequence Number                        |\n\
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\
-   |                    Acknowledgment Number                      |\n\
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\
-   |  Data |       |C|E|U|A|P|R|S|F|                               |\n\
-   | Offset| Rsrvd |W|C|R|C|S|S|Y|I|            Window             |\n\
-   |       |       |R|E|G|K|H|T|N|N|                               |\n\
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\
-   |           Checksum            |         Urgent Pointer        |\n\
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\
-   |                           [Options]                           |\n\
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\
-   |                                                               :\n\
-   :                             Data                              :\n\
-   :                                                               |\n\
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\
-  -T --tcp                TCP layer 4 indicator.\n\
-     --src-port=          [Override] Source port.\n\
-       <0-65535>\n\
-     --dest-port=         Destination port.\n\
-       <0-65535>\n\
-     --seq-num=           Sequence number.\n\
-       <0-4294967295>\n\
-     --ack-num=           Acknowledgement number.\n\
-       <0-4294967295>\n\
-     --data-ofs=<0-15>    Data Offset (in 32-bit words).\n\
-     --reserved=<0-15>    TCP Reserved bits (unused).\n\
-     --flags=<0-255>      Bitfield for TCP flags:\n\
-     | --cwr                Congestion Window Reduced (RFC 3168);\n\
-     | --ece                ECN-Echo (RFC 3168);\n\
-     | --urg                Urgent;\n\
-     | --ack                Acknowledgment;\n\
-     | --psh                Push;\n\
-     | --rst                Reset;\n\
-     | --syn                Synchronize; and\n\
-     | --fin                Finish.\n\
-     --window=<0-65535>   Window Size\n\
-     --urg-ptr=<0-65535>  Urgent Pointer\n\
-     --options=<>         [[UNFINISHED]]\n\
+| Byte |0,1,2,3,4,5,6,7|0,1,2,3,4,5,6,7|0,1,2,3,4,5,6,7|0,1,2,3,4,5,6,7|\n\
++------+---------------+---------------+---------------+---------------+\n\
+|  0-4 |          Source Port          |       Destination Port        |\n\
++------+-------------------------------+-------------------------------+\n\
+|  4-8 |                       Sequence Number                         |\n\
++------+---------------------------------------------------------------+\n\
+|  8-12|                    Acknowledgment Number                      |\n\
++------+-------+-------+-+-+-+-+-+-+-+-+-------------------------------+\n\
+| 12-16|DataOfs| Rsrvd |C|E|U|A|P|R|S|F|            Window             |\n\
++------+-------+-------+-+-+-+-+-+-+-+-+-------------------------------+\n\
+| 16-20|           Checksum            |         Urgent Pointer        |\n\
++------+-------------------------------+-------------------------------+\n\
+: 20-56:                      [options & padding]                      :\n\
++------+---------------------------------------------------------------+\n\
+-T --tcp                    TCP layer 4 indicator.\n\
+   --src-port=<0-65535>     [OVERRIDE] Source port.\n\
+   --dest-port=<0-65535>    Destination port.\n\
+   --seq-num=<0-4294967295> Sequence number.\n\
+   --ack-num=<0-4294967295> Acknowledgement number.\n\
+   --data-ofs=<0-15>        Data Offset (in 32-bit words).\n\
+   --reserved=<0-15>        TCP Reserved/unused bits (default: 0000).\n\
+   --flags=<0-255>          Bitfield for TCP flags:\n\
+   | --cwr                    [C]ongestion Window Reduced (RFC 3168);\n\
+   | --ece                    [E]CN-Echo (RFC 3168);\n\
+   | --urg                    [U]rgent;\n\
+   | --ack                    [A]cknowledgment;\n\
+   | --psh                    [P]ush;\n\
+   | --rst                    [R]eset;\n\
+   | --syn                    [S]ynchronize; and\n\
+   | --fin                    [F]inish.\n\
+   --window=<0-65535>       Window Size\n\
+   --chksum=<0-65535>       [OVERRIDE] Checksum\n\
+   --urg-ptr=<0-65535>      Urgent Pointer\n\
+   --options=<>             [[UNFINISHED]]\n\
 ";
 
 static const char HELP_TEXT_UDP[] = "\
-L4. UDP Header::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n\
-  -U --udp                UDP layer 4 indicator.\n\
-  [[UNIMPLEMENTED]]\n\
+::::::::::::::::::::::::::::L4.  UDP Header:::::::::::::::::::::::::::::\n\
+-U --udp                    UDP layer 4 indicator.\n\
+[[UNIMPLEMENTED]]\n\
 ";
 
 static const char HELP_TEXT_ICMP[] = "\
-L4. ICMP Header:::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n\
-  -I --icmp               ICMP layer 4 indicator.\n\
-  [[UNIMPLEMENTED]]\n\
+::::::::::::::::::::::::::::L4.  ICMP Header::::::::::::::::::::::::::::\n\
+-I --icmp                   ICMP layer 4 indicator.\n\
+[[UNIMPLEMENTED]]\n\
 ";
 
 // NOTE: These were "divided into sections because C99+ compilers
-// might not support string literals exceeding 4095 characters.
+// might not support single string literals exceeding 4095 characters.
 //
 // NOTE: The help texts alone take up a few kilobytes of space; you
 // could change this to an empty string to save on that, if need be.
-#define HELP_TEXT "%s%s%s%s%s%s", \
+#define HELP_TEXT_ALL "%s%s%s%s%s%s", \
     HELP_TEXT_OVERVIEW, HELP_TEXT_IPV4, HELP_TEXT_IPV6, \
     HELP_TEXT_TCP, HELP_TEXT_UDP, HELP_TEXT_ICMP
 
@@ -236,7 +223,7 @@ IPv4 Precedence Codes:\n\
     priority     1 Priority\n\
     immediate    2 Immediate\n\
     flash        3 Flash\n\
-    override     4 Flash-Override\n\
+    OVERRIDE     4 Flash-OVERRIDE\n\
     critical     5 Critic/Critical\n\
     internetwork 6 Internetwork Control\n\
     network      7 Network Control\n\

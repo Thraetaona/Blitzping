@@ -81,6 +81,24 @@ _Pragma ("once")
 #include "./protos/ip.h"
 #include "./protos/tcp.h"
 
+typedef enum osi_layer {
+    LAYER_2,
+    LAYER_3,
+    LAYER_4
+} osi_layer_t;
+
+typedef enum osi_protocol {
+    // Layer 3 (Network)
+    PROTO_L3_RAW,
+    PROTO_L3_IPV4,
+    PROTO_L3_IPV6,
+    // Layer 4 (Transport)
+    PROTO_L4_RAW,
+    PROTO_L4_TCP,
+    PROTO_L4_UDP,
+    PROTO_L4_ICMP // ICMP shouldn't belong in L3.
+} osi_proto_t;
+
 
 #endif // NETINET_H
 

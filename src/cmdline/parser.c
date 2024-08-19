@@ -318,7 +318,7 @@ enum OptionKind {
     OPTION_BUFFER_SIZE,
     OPTION_NO_ASYNC_SOCK,
     OPTION_NO_MEM_LOCK,
-    OPTION_NO_PREFETCH,
+    OPTION_NO_CPU_PREFETCH,
     // IPv4 Header
     OPTION_IPV4,
     OPTION_SRC_IP,
@@ -382,12 +382,13 @@ static const struct Option OPTIONS[] = {
     {'\0', "buffer-size", true, OPTION_BUFFER_SIZE},
     {'\0', "no-async-sock", false, OPTION_NO_ASYNC_SOCK},
     {'\0', "no-mem-lock", false, OPTION_NO_MEM_LOCK},
-    {'\0', "no-prefetch", false, OPTION_NO_PREFETCH},
+    {'\0', "no-cpu-prefetch", false, OPTION_NO_CPU_PREFETCH},
     // Multi-options (switches that may refer to multiple headers
     // and need extra processing to determine which one).
     {'\0', "src-ip", true, OPTION_SRC_IP},
     {'\0', "dest-ip", true, OPTION_DEST_IP},
     {'\0', "flags", true, OPTION_IP_FLAGS},
+    {'\0', "chksum", true, OPTION_IP_CHECKSUM},
     {'\0', "options", true, OPTION_IP_OPTIONS},
     // IPv4 Header
     {'4', "ipv4", false, OPTION_IPV4},
@@ -413,7 +414,7 @@ static const struct Option OPTIONS[] = {
     {'\0', "frag-ofs", true, OPTION_IP_FRAG_OFS},
     {'\0', "ttl", true, OPTION_IP_TTL},
     {'\0', "proto", true, OPTION_IP_PROTO},
-    {'\0', "checksum", true, OPTION_IP_CHECKSUM},
+    /* chksum */
     /* options */
     // IPv6 Header
     {'6', "ipv6", false, OPTION_IPV6},
@@ -441,6 +442,7 @@ static const struct Option OPTIONS[] = {
     {'\0', "syn", false, OPTION_NONE},
     {'\0', "fin", false, OPTION_NONE},
     {'\0', "window", true, OPTION_NONE},
+    /* chksum */
     {'\0', "urg-ptr", true, OPTION_NONE},
     /* options */
     // UDP Header
@@ -465,7 +467,7 @@ static bool handle_option(
             // TODO: Handle sub-help commands.
             program_args->general.opt_info = true;
 
-            fprintf(stderr, HELP_TEXT);
+            fprintf(stderr, HELP_TEXT_ALL);
             break;
         }
         case OPTION_ABOUT: {
@@ -526,13 +528,14 @@ static bool handle_option(
             program_args->advanced.no_mem_lock = true;
             break;
         }
-        case OPTION_NO_PREFETCH: {
-            program_args->advanced.no_prefetch = true;
+        case OPTION_NO_CPU_PREFETCH: {
+            program_args->advanced.no_cpu_prefetch = true;
             break;
         }
         // IPv4
         case OPTION_IPV4: {
-            program_args->protocol.layer_3.ipv4 = true;
+            program_args->parser.current_layer = LAYER_3;
+            program_args->parser.current_proto = PROTO_L3_IPV4;
             break;
         }
         case OPTION_SRC_IP: {
@@ -711,7 +714,8 @@ static bool handle_option(
         }
         // IPv6
         case OPTION_IPV6: {
-            program_args->protocol.layer_3.ipv6 = true;
+            program_args->parser.current_layer = LAYER_3;
+            program_args->parser.current_proto = PROTO_L3_IPV6;
             break;
         }
         case OPTION_IP6_NEXT_HEADER: {
@@ -726,17 +730,20 @@ static bool handle_option(
         // unfinished
         // TCP Header
         case OPTION_TCP: {
-            program_args->protocol.layer_4.tcp = true;
+            program_args->parser.current_layer = LAYER_4;
+            program_args->parser.current_proto = PROTO_L4_TCP;
             break;
         }
         // UDP Header
         case OPTION_UDP: {
-            program_args->protocol.layer_4.udp = true;
+            program_args->parser.current_layer = LAYER_4;
+            program_args->parser.current_proto = PROTO_L4_UDP;
             break;
         }
         // ICMP Header
         case OPTION_ICMP: {
-            program_args->protocol.layer_4.icmp = true;
+            program_args->parser.current_layer = LAYER_4;
+            program_args->parser.current_proto = PROTO_L4_ICMP;
             break;
         }
         // Null Option (this shouldn't happen)
@@ -760,7 +767,7 @@ int parse_args(
 
     // If no arguments were given, print the help text and return.
     if (argc == 1) {
-        fprintf(stderr, HELP_TEXT);
+        fprintf(stderr, HELP_TEXT_ALL);
         return 1;
     }
 
@@ -830,7 +837,7 @@ int parse_args(
         }
         else {
             // Unrecognized switch character
-            fprintf(stderr, HELP_TEXT);
+            fprintf(stderr, HELP_TEXT_ALL);
             return 1;
         }
     }

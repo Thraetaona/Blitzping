@@ -8,7 +8,7 @@ _Pragma ("once")
 #define ENDIAN_H
 
 
-typedef enum endianness {
+typedef enum Endianness {
     little_endian,
     big_endian,
 } endianness_t;

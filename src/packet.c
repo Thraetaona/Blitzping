@@ -101,7 +101,7 @@ static int send_loop(void *arg) {
         iov[i].iov_len = packet_length;
     }
     // Compiler optimizations likely override this anyhow
-    if (!program_args->advanced.no_prefetch) {
+    if (!program_args->advanced.no_cpu_prefetch) {
         PREFETCH(packet_buffer, 1, 3);
         PREFETCH(iov, 0, 3);
     }
