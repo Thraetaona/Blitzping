@@ -3,7 +3,7 @@
   <h1><code>Blitzping</code></h1>
 
   <p>
-    <strong>Sending IP packets as fast as possible in userland.</strong>
+    <strong>A very high-speed, configurable, and portable packet-crafting utility optimized for embedded devices</strong>
   </p>
 
   
@@ -63,9 +63,9 @@ nping --count 0 --rate 1000000 --hide-sent --no-capture --privileged --send-eth 
 # Compilation
 
 
-Blitzping uses C11 syntax but without any hard dependencies on actual C11 headers, so **it can compile under C89 just fine.[^1]**  Blitzping's usage of libc is mostly [freestanding](https://en.cppreference.com/w/cpp/freestanding), and it only uses standard headers from the 1990 edition of POSIX.1 (IEEE Standard 1003.1-1990), without any BSD-, XSI-, SysV-, or GNU-specific additions.  Blitzping can be compiled by both LLVM and GCC without any performance penalty; however, because of LLVM being much more [straightforward](https://clang.llvm.org/docs/CrossCompilation.html) in cross-compiling to other architectures with its target triplets, I configured the makefile to use that toolchain (i.e., clang, lld, and llvm-strip) by default.  Also, Blitzping's makefile has additional workarounds for [LLVM/Clang's bug with soft-core targets.](https://github.com/llvm/llvm-project/issues/102259)
+Blitzping uses C11 syntax (e.g., anonymous structs and list commas) but without any hard dependencies on actual C11 headers, so **it can compile under C99 just fine.[^1]**  Blitzping's usage of libc is mostly [freestanding](https://en.cppreference.com/w/cpp/freestanding), and it only uses standard headers, mainly Berkley sockets, from the 2001 edition of POSIX.1 (IEEE Standard 1003.1-2001), without any BSD-, XSI-, SysV-, or GNU-specific additions.  Blitzping can be compiled by both LLVM and GCC; because of LLVM being slightly [easier](https://clang.llvm.org/docs/CrossCompilation.html) in cross-compiling to other architectures with its target triplets, I configured the makefile to use that toolchain (i.e., clang, lld, and llvm-strip) by default.  Also, Blitzping's makefile has additional workarounds for [LLVM/Clang's bug with soft-core targets.](https://github.com/llvm/llvm-project/issues/102259)
 
-[^1]: This requires C11 syntax support (without actually including headers or affecting minimum libc version) to be enabled in C89 mode via `-std=gnu89` and disabling warning-errors.
+[^1]: To compile under C99, supply `C_STD=c99` to the makefile; this will disable C11 threads but POSIX threads will continue to remain usable, independently.
 
 ### Install the LLVM toolchain (if you do not already have it):
 (LLVM/Clang, LLVM Linker, and LLVM-strip)
@@ -104,13 +104,13 @@ While packages of common architectures, such as x86_64 and arm64, are widely sup
 
 ### 2. Then, simply specify your ["target triplet"](https://wiki.osdev.org/Target_Triplet) in make; for example, a soft-float big-endian MIPS running Linux (OpenWRT) with musl libc would be as follows:
 ```
-make TRIPLET=mips-openwrt-linux-muslsf
+make TARGET=mips-openwrt-linux-muslsf
 ```
 **Make sure that you specify the correct libc (e.g., `musl`, `gnu`, `uclibc`) _and_ whether or not it lacks an FPU (i.e., if it is soft-float and requires an `sf` suffix to libc).**
 
 Optionally, you can specify the target's sub-architecture to optimize specifically for it:
 ```
-make TRIPLET=mips-linux-muslsf SUBARCH=mips32r2
+make TARGET=mips-linux-muslsf SUBARCH=mips32r2
 ```
 
 (As mentioned earlier, you could also `apt install gcc-mips-linux-gnu` and skip LLVM/Clang altogether, if you really want to.)
