@@ -24,6 +24,10 @@ Here are some of the performance optimizations specifically done on Blitzping:
 * **Multithreading:** Polling the same socket in `sendto()` from multiple threads; and
 * **Compiler Flags:** Compiling with `-Ofast`, `-flto`, and `-march=native` (these actually had little effect; by this point, the entire bottleneck lays on the Kernel's own `sendto()` routine).
 
+## License
+
+Blitzping's source code is licensed under the GNU General Public License v3.0 or later ("GPLv3+"), Copyright (C) 2024 Fereydoun Memarzanjany.  Blitzping comes with ABSOLUTELY NO WARRANTY.  Blitzping is free software, and you are welcome to redistribute it under certain conditions; see the GPLv3+.  If you wish to report a bug or contribute to this project, visit this repository: https://github.com/Thraetaona/Blitzping
+
 Usage: 
 `blitzping <num. threads> <source IP/CIDR> <dest. IP:Port>` \
 Example: `./blitzping 4 192.168.123.123/19 10.10.10.10:80` (this would send TCP SYN packets to `10.10.10.10`'s port `80` from a randomly chosen source IP within an entire range of `192.168.96.0` to `192.168.127.255`, using `4` threads.)
