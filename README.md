@@ -1,5 +1,9 @@
 <div align="center">
 
+<p align="center">
+  <img src="docs/blitzping_logo.png?raw=true" alt="Blitzping's logo" width="500">
+</p>
+
   <h1><code>Blitzping</code></h1>
 
   <p>
