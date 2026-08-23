@@ -15,8 +15,6 @@ _Pragma ("once")
 #include <stdio.h>
 #include <time.h>
 
-extern int errno;
-
 typedef enum LogLevel {
     LOG_NONE  = -1,
     LOG_CRIT  = 0,
