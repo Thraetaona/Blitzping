@@ -32,7 +32,7 @@ typedef enum Endianness {
 #endif
 
 // Double-check endianness at runtime on the target machine.
-inline endianness_t check_endianness() {
+inline endianness_t check_endianness(void) {
     union {
         int  word;
         char byte[sizeof (int)];

@@ -40,9 +40,6 @@
 #define PORT_MIN 0
 #define PORT_MAX 65535 // 2^16 - 1
 
-extern int errno; // Declared in <errno.h>
-
-
 int parse_args(
     const int argc,
     char *const argv[],

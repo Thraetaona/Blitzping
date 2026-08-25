@@ -48,8 +48,6 @@ typedef union {
 //#include <winsock2.h>
 #endif
 
-extern int errno; // Declared in <errno.h>
-
 #define IP_PKT_MTU 1500 // Same as Ethernet II MTU (bytes)
 #define MAX_THREADS 100 // Arbitrary limit (TODO: Remove?)
 
