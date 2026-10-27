@@ -36,6 +36,10 @@ Usage:
 `blitzping <num. threads> <source IP/CIDR> <dest. IP:Port>` \
 Example: `./blitzping 4 192.168.123.123/19 10.10.10.10:80` (this would send TCP SYN packets to `10.10.10.10`'s port `80` from a randomly chosen source IP within an entire range of `192.168.96.0` to `192.168.127.255`, using `4` threads.)
 
+## Maintainer
+
+Blitzping is authored and maintained by Fereydoun Memarzanjany ([@Thraetaona](https://github.com/Thraetaona)). I'm also responsible for reviewing reported bugs and fixing security issues.
+
 ## Benchmarks
 
 I tested Blitzping against both hpign3 and nping on two different routers, both running OpenWRT 23.05.03 (Linux Kernel v5.15.150) with the "masquerading" option (i.e., NAT) turned off in firewall; one device was a single-core 32-bit MIPS SoC, and another was a 64-bit quad-core ARMv8 CPU.  On the quad-core CPU, because both hping3 and nping were designed without multithreading capabilities (unlike Blitzping), I made the competition "fairer" by launching  them as four individual processes, as opposed to Blitzping only using one.  Across all runs and on both devices, CPU usage remained at 100%, entirely dedicated to the currently running program.  Finally, the network interface cards ("NICs") themselves were not bottlenecks: the MIPS SoC had a 100 Mbps (~95.3674 MiB/s) NIC and the ARMv8 a 1000 Mbps (~953.674 MiB/s).
